@@ -23,7 +23,6 @@ WORKDIR /app
 # Root so the mounted /data volume is writable for SQLite (local demo)
 USER root
 
-ENV ASPNETCORE_URLS=http://+:8080
 EXPOSE 8080
 
 # curl for Compose healthcheck (aspnet:9.0 has neither curl nor wget)
@@ -35,4 +34,5 @@ RUN mkdir -p /data
 
 COPY --from=publish /app/publish .
 
-ENTRYPOINT ["dotnet", "NOf1Lab.Api.dll"]
+# Compose sets ASPNETCORE_URLS; hosts like Render inject PORT (fall back to 8080).
+CMD ["sh", "-c", "if [ -n \"$ASPNETCORE_URLS\" ]; then exec dotnet NOf1Lab.Api.dll; else ASPNETCORE_HTTP_PORTS=${PORT:-8080} exec dotnet NOf1Lab.Api.dll; fi"]

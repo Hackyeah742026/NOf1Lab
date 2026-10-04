@@ -23,6 +23,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
 });
 builder.Services.AddOpenApi();
 
+// Compose uses Cors:Origins; Render/hosted uses Cors:AllowedOrigins (supports https://*.vercel.app).
 var defaultCorsOrigins = new[]
 {
     "http://localhost:5173",
@@ -30,17 +31,23 @@ var defaultCorsOrigins = new[]
     "http://localhost:8080",
     "http://127.0.0.1:8080"
 };
-var corsOrigins = builder.Configuration["Cors:Origins"]
-    ?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-if (corsOrigins is null || corsOrigins.Length == 0)
-{
-    corsOrigins = defaultCorsOrigins;
-}
+var allowedOrigins = new[]
+    {
+        builder.Configuration["Cors:AllowedOrigins"],
+        builder.Configuration["Cors:Origins"]
+    }
+    .Where(static s => !string.IsNullOrWhiteSpace(s))
+    .SelectMany(static s => s!.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+    .Select(static origin => origin.TrimEnd('/'))
+    .Concat(defaultCorsOrigins)
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToArray();
 
 builder.Services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
-        policy.WithOrigins(corsOrigins)
+        policy.WithOrigins(allowedOrigins)
+            .SetIsOriginAllowedToAllowWildcardSubdomains()
             .AllowAnyHeader()
             .AllowAnyMethod());
 });
