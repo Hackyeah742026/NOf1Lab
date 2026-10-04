@@ -1,5 +1,11 @@
 import { apiFetch } from './client'
-import type { CheckIn, Experiment, ExperimentResult, ExplainResponse } from './types'
+import type {
+  AnalysisPreview,
+  CheckIn,
+  Experiment,
+  ExperimentResult,
+  ExplainResponse,
+} from './types'
 
 export function fetchExperiments() {
   return apiFetch<Experiment[]>('/api/experiments')
@@ -64,6 +70,10 @@ export function completeExperiment(id: string) {
 
 export function fetchResult(id: string) {
   return apiFetch<ExperimentResult>(`/api/experiments/${id}/result`)
+}
+
+export function fetchPreviewAnalysis(id: string) {
+  return apiFetch<AnalysisPreview>(`/api/experiments/${id}/analysis/preview`)
 }
 
 export function explainExperiment(id: string) {

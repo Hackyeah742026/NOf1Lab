@@ -6,13 +6,18 @@ import {
   createCheckIn,
   fetchCheckIns,
   fetchExperiment,
+  fetchPreviewAnalysis,
   importCheckIns,
   startExperiment,
   stopExperiment,
 } from '../api/experiments'
+import { fetchTemplates } from '../api/templates'
 import { ApiError } from '../api/client'
 import { AppShell } from '../components/AppShell'
 import { Disclaimer } from '../components/Disclaimer'
+import { MetricPhaseChart } from '../components/MetricPhaseChart'
+import { PhaseProgress } from '../components/PhaseProgress'
+import { StatGrid } from '../components/StatGrid'
 
 export function ActiveExperimentPage() {
   const { id = '' } = useParams()
@@ -23,6 +28,8 @@ export function ActiveExperimentPage() {
   const [notes, setNotes] = useState('')
   const [safetyFlag, setSafetyFlag] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [stopReason, setStopReason] = useState('')
+  const [showStopPrompt, setShowStopPrompt] = useState(false)
 
   const experiment = useQuery({
     queryKey: ['experiment', id],
@@ -36,11 +43,32 @@ export function ActiveExperimentPage() {
     enabled: Boolean(id),
   })
 
+  const templates = useQuery({
+    queryKey: ['templates'],
+    queryFn: fetchTemplates,
+  })
+
+  const template = templates.data?.find((item) => item.key === experiment.data?.templateKey)
+  const status = experiment.data?.status
+  const hasCheckIns = (checkIns.data?.length ?? 0) > 0
+  const previewEnabled =
+    Boolean(id) &&
+    hasCheckIns &&
+    (status === 'Active' || status === 'Stopped')
+
+  const preview = useQuery({
+    queryKey: ['analysis-preview', id],
+    queryFn: () => fetchPreviewAnalysis(id),
+    enabled: previewEnabled,
+    retry: false,
+  })
+
   async function refresh() {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: ['experiment', id] }),
       queryClient.invalidateQueries({ queryKey: ['check-ins', id] }),
       queryClient.invalidateQueries({ queryKey: ['experiments'] }),
+      queryClient.invalidateQueries({ queryKey: ['analysis-preview', id] }),
     ])
   }
 
@@ -50,8 +78,15 @@ export function ActiveExperimentPage() {
   })
 
   const stop = useMutation({
-    mutationFn: () => stopExperiment(id),
-    onSuccess: refresh,
+    mutationFn: (reason?: string) => stopExperiment(id, reason),
+    onSuccess: async () => {
+      setShowStopPrompt(false)
+      setStopReason('')
+      await refresh()
+    },
+    onError: (err) => {
+      setError(err instanceof ApiError ? err.message : 'Stop failed.')
+    },
   })
 
   const addCheckIn = useMutation({
@@ -88,25 +123,20 @@ export function ActiveExperimentPage() {
   })
 
   const data = experiment.data
-  const dayNumber =
-    data?.startDate != null
-      ? Math.max(
-          1,
-          Math.floor(
-            (Date.now() - new Date(data.startDate).getTime()) / (1000 * 60 * 60 * 24),
-          ) + 1,
-        )
-      : null
-  const todayPhase =
-    data?.startDate && data.phaseAEnd
-      ? new Date().toISOString().slice(0, 10) <= data.phaseAEnd
-        ? 'A'
-        : 'B'
-      : null
+  const metricLabel = template?.metricLabel ?? 'Metric'
+  const phaseALabel = template?.phaseALabel ?? 'Phase A'
+  const phaseBLabel = template?.phaseBLabel ?? 'Phase B'
+  const previewMissingPhases =
+    preview.error instanceof ApiError && preview.error.code === 'Analysis.MissingPhases'
 
   function onSubmit(event: FormEvent) {
     event.preventDefault()
     addCheckIn.mutate()
+  }
+
+  function confirmStop() {
+    const reason = stopReason.trim()
+    stop.mutate(reason || undefined)
   }
 
   return (
@@ -121,28 +151,100 @@ export function ActiveExperimentPage() {
               <div>
                 <p className="text-sm uppercase tracking-[0.16em] text-[var(--color-muted)]">
                   {data.status}
-                  {todayPhase ? ` · Phase ${todayPhase}` : ''}
-                  {dayNumber ? ` · Day ${dayNumber}` : ''}
+                  {template ? ` · ${metricLabel}` : ''}
                 </p>
                 <h1 className="mt-2 text-4xl text-[var(--color-ink)] md:text-5xl">
                   {data.templateTitle ?? data.templateKey}
                 </h1>
                 <p className="mt-3 max-w-2xl text-lg text-[var(--color-muted)]">{data.hypothesis}</p>
+                {template && (
+                  <p className="mt-3 text-sm text-[var(--color-muted)]">
+                    Tracking <span className="font-semibold text-[var(--color-ink)]">{metricLabel}</span>
+                    {' · '}
+                    {phaseALabel} → {phaseBLabel}
+                  </p>
+                )}
               </div>
               <div className="rounded-xl bg-[var(--color-accent-soft)] px-4 py-3 text-center">
                 <p className="text-xs uppercase tracking-wider text-[var(--color-muted)]">Check-ins</p>
                 <p className="text-3xl font-semibold text-[var(--color-accent)]">{data.checkInCount}</p>
               </div>
             </div>
-            <p className="mt-4 text-sm text-[var(--color-muted)]">
-              Window {data.startDate ?? '—'} → {data.endDate ?? '—'}
-            </p>
             {data.stopReason && (
               <p className="mt-4 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950">
-                {data.stopReason}
+                Stopped: {data.stopReason}
               </p>
             )}
           </section>
+
+          <PhaseProgress
+            className="animate-rise-delay mb-6"
+            startDate={data.startDate}
+            phaseAEnd={data.phaseAEnd}
+            endDate={data.endDate}
+            phaseALabel={phaseALabel}
+            phaseBLabel={phaseBLabel}
+          />
+
+          <MetricPhaseChart
+            className="animate-rise-delay mb-8"
+            checkIns={checkIns.data ?? []}
+            metricLabel={metricLabel}
+            phaseALabel={phaseALabel}
+            phaseBLabel={phaseBLabel}
+            meanA={preview.data?.meanA}
+            meanB={preview.data?.meanB}
+          />
+
+          {(status === 'Active' || status === 'Stopped') && (
+            <section className="animate-rise-late mb-8">
+              <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl">Mid-run preview</h2>
+                  <p className="text-sm text-[var(--color-muted)]">
+                    Live stats while the protocol is still open.
+                  </p>
+                </div>
+              </div>
+
+              {!hasCheckIns && (
+                <p className="rounded-xl border border-emerald-900/10 bg-white/65 px-4 py-3 text-sm text-[var(--color-muted)]">
+                  Log a few check-ins to unlock the provisional analysis.
+                </p>
+              )}
+
+              {previewEnabled && preview.isPending && (
+                <p className="text-sm text-[var(--color-muted)]">Computing preview…</p>
+              )}
+
+              {previewMissingPhases && (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+                  Need check-ins from both phases before a preview can run. Keep logging through{' '}
+                  {phaseALabel} and {phaseBLabel}.
+                </p>
+              )}
+
+              {preview.isError && !previewMissingPhases && (
+                <p className="text-sm text-red-700">
+                  {preview.error instanceof ApiError
+                    ? preview.error.message
+                    : 'Could not load preview analysis.'}
+                </p>
+              )}
+
+              {preview.data && (
+                <>
+                  <p className="mb-3 text-sm text-[var(--color-muted)]">
+                    Provisional verdict signal:{' '}
+                    <span className="font-semibold text-[var(--color-ink)]">
+                      {preview.data.verdict}
+                    </span>
+                  </p>
+                  <StatGrid stats={preview.data} provisional />
+                </>
+              )}
+            </section>
+          )}
 
           <div className="mb-8 flex flex-wrap gap-3">
             {data.status === 'Draft' && (
@@ -165,7 +267,7 @@ export function ActiveExperimentPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => stop.mutate()}
+                  onClick={() => setShowStopPrompt(true)}
                   className="rounded-md bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-semibold"
                 >
                   Stop
@@ -182,18 +284,59 @@ export function ActiveExperimentPage() {
             )}
           </div>
 
+          {showStopPrompt && data.status === 'Active' && (
+            <section className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5">
+              <h2 className="text-xl text-amber-950">Stop this experiment?</h2>
+              <p className="mt-1 text-sm text-amber-950/80">
+                Optional: note why you are stopping. You can still review check-ins afterward.
+              </p>
+              <label className="mt-4 block text-sm text-amber-950">
+                <span className="mb-1 block">Reason (optional)</span>
+                <input
+                  type="text"
+                  value={stopReason}
+                  onChange={(e) => setStopReason(e.target.value)}
+                  className="w-full rounded-md border border-amber-300 bg-white px-3 py-2"
+                  placeholder="e.g. schedule conflict, safety concern"
+                />
+              </label>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={confirmStop}
+                  disabled={stop.isPending}
+                  className="rounded-md bg-amber-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {stop.isPending ? 'Stopping…' : 'Confirm stop'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowStopPrompt(false)
+                    setStopReason('')
+                  }}
+                  className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-amber-950"
+                >
+                  Cancel
+                </button>
+              </div>
+            </section>
+          )}
+
           {(data.status === 'Active' || data.status === 'Draft') && (
-            <section className="animate-rise-delay mb-10 grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
+            <section className="animate-rise-late mb-10 grid gap-6 md:grid-cols-[1.2fr_0.8fr]">
               <form
                 onSubmit={onSubmit}
                 className="rounded-2xl border border-emerald-900/10 bg-white/80 p-6 shadow-sm"
               >
                 <h2 className="mb-1 text-3xl">30-second check-in</h2>
                 <p className="mb-5 text-sm text-[var(--color-muted)]">
-                  One metric. One adherence checkbox. Done.
+                  {metricLabel}. One adherence checkbox. Done.
                 </p>
                 <label className="mb-5 block text-sm">
-                  <span className="mb-2 block text-[var(--color-muted)]">How did today feel? (1–10)</span>
+                  <span className="mb-2 block text-[var(--color-muted)]">
+                    {metricLabel} (1–10)
+                  </span>
                   <input
                     type="range"
                     min={1}

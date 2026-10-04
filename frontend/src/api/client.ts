@@ -3,11 +3,13 @@ const TOKEN_KEY = 'nof1lab.token'
 
 export class ApiError extends Error {
   status: number
+  code?: string
 
-  constructor(message: string, status: number) {
+  constructor(message: string, status: number, code?: string) {
     super(message)
     this.name = 'ApiError'
     this.status = status
+    this.code = code
   }
 }
 
@@ -55,13 +57,15 @@ export async function apiFetch<T>(
 
   if (!response.ok) {
     let detail = `Request failed: ${response.status}`
+    let code: string | undefined
     try {
       const problem = (await response.json()) as { detail?: string; title?: string }
       detail = problem.detail ?? problem.title ?? detail
+      code = problem.title
     } catch {
       // ignore non-JSON error bodies
     }
-    throw new ApiError(detail, response.status)
+    throw new ApiError(detail, response.status, code)
   }
 
   if (response.status === 204) {

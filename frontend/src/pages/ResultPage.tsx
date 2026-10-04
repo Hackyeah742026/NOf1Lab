@@ -1,8 +1,16 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { explainExperiment, fetchExperiment, fetchResult } from '../api/experiments'
+import {
+  explainExperiment,
+  fetchCheckIns,
+  fetchExperiment,
+  fetchResult,
+} from '../api/experiments'
+import { fetchTemplates } from '../api/templates'
 import { AppShell } from '../components/AppShell'
 import { Disclaimer } from '../components/Disclaimer'
+import { MetricPhaseChart } from '../components/MetricPhaseChart'
+import { StatGrid } from '../components/StatGrid'
 
 export function ResultPage() {
   const { id = '' } = useParams()
@@ -20,11 +28,26 @@ export function ResultPage() {
     retry: false,
   })
 
+  const checkIns = useQuery({
+    queryKey: ['check-ins', id],
+    queryFn: () => fetchCheckIns(id),
+    enabled: Boolean(id),
+  })
+
+  const templates = useQuery({
+    queryKey: ['templates'],
+    queryFn: fetchTemplates,
+  })
+
   const explain = useMutation({
     mutationFn: () => explainExperiment(id),
   })
 
   const data = result.data ?? experiment.data?.result
+  const template = templates.data?.find((item) => item.key === experiment.data?.templateKey)
+  const metricLabel = template?.metricLabel ?? 'Metric'
+  const phaseALabel = template?.phaseALabel ?? 'Phase A'
+  const phaseBLabel = template?.phaseBLabel ?? 'Phase B'
 
   return (
     <AppShell>
@@ -72,16 +95,17 @@ export function ResultPage() {
             </p>
           </section>
 
-          <section className="animate-rise-late mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="Mean A" value={data.meanA} />
-            <Stat label="Mean B" value={data.meanB} />
-            <Stat label="Delta" value={data.delta} />
-            <Stat label="Effect size" value={data.effectSize} />
-            <Stat label="Adherence A" value={`${data.adherenceA}%`} />
-            <Stat label="Adherence B" value={`${data.adherenceB}%`} />
-            <Stat label="Samples A" value={data.sampleSizeA} />
-            <Stat label="Samples B" value={data.sampleSizeB} />
-          </section>
+          <MetricPhaseChart
+            className="animate-rise-delay mb-8"
+            checkIns={checkIns.data ?? []}
+            metricLabel={metricLabel}
+            phaseALabel={phaseALabel}
+            phaseBLabel={phaseBLabel}
+            meanA={data.meanA}
+            meanB={data.meanB}
+          />
+
+          <StatGrid className="animate-rise-late mb-8" stats={data} />
 
           <section className="mb-8 rounded-2xl border border-emerald-900/10 bg-white/80 p-6">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -148,14 +172,5 @@ export function ResultPage() {
 
       <Disclaimer className="mt-10" />
     </AppShell>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div className="rounded-xl border border-emerald-900/10 bg-white/75 px-4 py-4">
-      <p className="text-xs uppercase tracking-wider text-[var(--color-muted)]">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-[var(--color-ink)]">{value}</p>
-    </div>
   )
 }

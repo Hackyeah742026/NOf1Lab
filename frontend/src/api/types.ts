@@ -41,6 +41,31 @@ export type ExperimentResult = {
   evidenceJson: string
 }
 
+export type AnalysisPreview = {
+  meanA: number
+  meanB: number
+  delta: number
+  effectSize: number
+  adherenceA: number
+  adherenceB: number
+  sampleSizeA: number
+  sampleSizeB: number
+  verdict: Verdict
+  isProvisional: true
+  evidenceJson?: string | null
+}
+
+export type AnalysisStats = {
+  meanA: number
+  meanB: number
+  delta: number
+  effectSize: number
+  adherenceA: number
+  adherenceB: number
+  sampleSizeA: number
+  sampleSizeB: number
+}
+
 export type Experiment = {
   id: string
   templateKey: string
