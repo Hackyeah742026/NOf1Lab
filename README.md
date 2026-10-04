@@ -51,7 +51,7 @@ App: http://localhost:5173
 - Email: `demo@nof1lab.local`
 - Password: `Demo123!`
 
-Seeded data includes 5 category templates and one completed earlier-bedtime experiment with a computed verdict.
+Seeded data includes category templates (insert-missing by Key on startup) and one completed earlier-bedtime experiment with a computed verdict.
 
 Optional: set `GEMINI_API_KEY` in a root `.env` for live AI explanations. Without it, `/explain` returns deterministic fallback copy that still cites the computed numbers.
 

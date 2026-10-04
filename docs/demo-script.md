@@ -4,7 +4,7 @@
 2. **Login (10s)** — Use `demo@nof1lab.local` / `Demo123!`.
 3. **Dashboard (20s)** — Open the seeded completed earlier-bedtime experiment → Result shows Keep + numbers.
 4. **Explain (20s)** — Click “Explain my result” (Gemini if keyed, otherwise fallback that still cites numbers).
-5. **Templates (30s)** — Show sport / physical / mental / lifestyle coverage; start Morning light.
+5. **Templates (30s)** — Show sport / physical / mental / lifestyle coverage (new keys appear on restart without wiping data); start Morning light.
 6. **Check-in (40s)** — Log one day (slider + adherence). Mention safety stop checkbox.
 7. **Mid-run preview (20s)** — With check-ins in both phases, open charts / call `GET /api/experiments/{id}/analysis/preview` for provisional stats (does not complete the run).
 8. **Import shortcut (30s)** — Or import `data/samples/earlier-bedtime-demo.csv`, complete, show verdict.
