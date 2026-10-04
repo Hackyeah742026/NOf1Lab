@@ -35,6 +35,15 @@ h3 {
   letter-spacing: -0.02em;
 }
 
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-body {
+  font-family: var(--font-body);
+  letter-spacing: normal;
+}
+
 @keyframes rise-in {
   from {
     opacity: 0;
