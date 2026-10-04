@@ -13,12 +13,26 @@ import type { CheckIn } from '../api/types'
 
 type MetricPhaseChartProps = {
   checkIns: CheckIn[]
+  /** When true, show a loading placeholder instead of the empty-state copy. */
+  isLoading?: boolean
   metricLabel?: string
   phaseALabel?: string
   phaseBLabel?: string
   meanA?: number | null
   meanB?: number | null
   className?: string
+}
+
+function formatDayLabel(day: string) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return day
+  const date = new Date(`${day}T12:00:00.000Z`)
+  if (Number.isNaN(date.getTime())) return day
+  return date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
 }
 
 type ChartPoint = {
@@ -37,6 +51,7 @@ function readCssVar(name: string, fallback: string) {
 
 export function MetricPhaseChart({
   checkIns,
+  isLoading = false,
   metricLabel = 'Metric',
   phaseALabel = 'Phase A',
   phaseBLabel = 'Phase B',
@@ -44,6 +59,16 @@ export function MetricPhaseChart({
   meanB,
   className = '',
 }: MetricPhaseChartProps) {
+  if (isLoading) {
+    return (
+      <div
+        className={`rounded-2xl border border-emerald-900/10 bg-white/70 px-5 py-8 text-center ${className}`}
+      >
+        <p className="text-sm text-[var(--color-muted)]">Loading chart…</p>
+      </div>
+    )
+  }
+
   if (checkIns.length === 0) {
     return (
       <div
@@ -109,7 +134,7 @@ export function MetricPhaseChart({
                   name === 'valueA' ? phaseALabel : name === 'valueB' ? phaseBLabel : String(name)
                 return [value, label]
               }}
-              labelFormatter={(label) => `Day ${label}`}
+              labelFormatter={(label) => formatDayLabel(String(label))}
             />
             <Legend
               formatter={(value) =>

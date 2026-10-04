@@ -10,9 +10,14 @@ type PhaseProgressProps = {
   className?: string
 }
 
+/** UTC calendar day as YYYY-MM-DD — matches API DateOnly.FromDateTime(DateTime.UtcNow). */
+function utcTodayString(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
 function parseDay(value?: string | null): Date | null {
   if (!value) return null
-  const date = new Date(`${value}T12:00:00`)
+  const date = new Date(`${value}T12:00:00.000Z`)
   return Number.isNaN(date.getTime()) ? null : date
 }
 
@@ -28,11 +33,7 @@ export function PhaseProgress({
   phaseBLabel = 'Phase B',
   className = '',
 }: PhaseProgressProps) {
-  const [today] = useState(() => {
-    const now = new Date()
-    now.setHours(12, 0, 0, 0)
-    return now
-  })
+  const [today] = useState(() => parseDay(utcTodayString())!)
 
   const start = parseDay(startDate)
   const phaseEnd = parseDay(phaseAEnd)
@@ -82,7 +83,7 @@ export function PhaseProgress({
 
       <div className="relative h-3 overflow-hidden rounded-full bg-emerald-900/10">
         <div
-          className="absolute inset-y-0 left-0 bg-emerald-900/10"
+          className="absolute inset-y-0 left-0 bg-[var(--color-accent-soft)]"
           style={{ width: `${phaseAWidth}%` }}
           aria-hidden
         />

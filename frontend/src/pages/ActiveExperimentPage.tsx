@@ -175,7 +175,107 @@ export function ActiveExperimentPage() {
                 Stopped: {data.stopReason}
               </p>
             )}
+            {data.status === 'Stopped' && !data.result && (
+              <p className="mt-3 text-sm text-[var(--color-muted)]">
+                Protocol paused. Finalize with Complete to compute a verdict from the check-ins you
+                already logged.
+              </p>
+            )}
           </section>
+
+          <div className="mb-6 flex flex-wrap gap-3">
+            {data.status === 'Draft' && (
+              <button
+                type="button"
+                onClick={() => start.mutate()}
+                disabled={start.isPending}
+                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {start.isPending ? 'Starting…' : 'Start'}
+              </button>
+            )}
+            {data.status === 'Active' && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => complete.mutate()}
+                  disabled={complete.isPending}
+                  className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {complete.isPending ? 'Completing…' : 'Complete & compute verdict'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowStopPrompt(true)}
+                  className="rounded-md bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-semibold"
+                >
+                  Stop
+                </button>
+              </>
+            )}
+            {data.status === 'Stopped' && !data.result && (
+              <button
+                type="button"
+                onClick={() => complete.mutate()}
+                disabled={complete.isPending}
+                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {complete.isPending ? 'Completing…' : 'Complete & compute verdict'}
+              </button>
+            )}
+            {data.result && (
+              <Link
+                to={`/app/experiments/${id}/result`}
+                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white"
+              >
+                View result
+              </Link>
+            )}
+          </div>
+
+          {showStopPrompt && data.status === 'Active' && (
+            <section className="mb-6 rounded-2xl border border-amber-300 bg-amber-50 p-5">
+              <h2 className="text-xl text-amber-950">Stop this experiment?</h2>
+              <p className="mt-1 text-sm text-amber-950/80">
+                Optional: note why you are stopping. Afterward you can still finalize with Complete
+                to compute a verdict from logged check-ins.
+              </p>
+              <label className="mt-4 block text-sm text-amber-950">
+                <span className="mb-1 block">Reason (optional)</span>
+                <input
+                  type="text"
+                  value={stopReason}
+                  onChange={(e) => setStopReason(e.target.value)}
+                  className="w-full rounded-md border border-amber-300 bg-white px-3 py-2"
+                  placeholder="e.g. schedule conflict, safety concern"
+                />
+              </label>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={confirmStop}
+                  disabled={stop.isPending}
+                  className="rounded-md bg-amber-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                >
+                  {stop.isPending ? 'Stopping…' : 'Confirm stop'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowStopPrompt(false)
+                    setStopReason('')
+                  }}
+                  className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-amber-950"
+                >
+                  Cancel
+                </button>
+              </div>
+            </section>
+          )}
+
+          {error && data.status !== 'Active' && data.status !== 'Draft' && (
+            <p className="mb-6 text-sm text-red-700">{error}</p>
+          )}
 
           <PhaseProgress
             className="animate-rise-delay mb-6"
@@ -189,6 +289,7 @@ export function ActiveExperimentPage() {
           <MetricPhaseChart
             className="animate-rise-delay mb-8"
             checkIns={checkIns.data ?? []}
+            isLoading={checkIns.isPending}
             metricLabel={metricLabel}
             phaseALabel={phaseALabel}
             phaseBLabel={phaseBLabel}
@@ -207,7 +308,11 @@ export function ActiveExperimentPage() {
                 </div>
               </div>
 
-              {!hasCheckIns && (
+              {checkIns.isPending && (
+                <p className="text-sm text-[var(--color-muted)]">Loading check-ins…</p>
+              )}
+
+              {checkIns.isSuccess && !hasCheckIns && (
                 <p className="rounded-xl border border-emerald-900/10 bg-white/65 px-4 py-3 text-sm text-[var(--color-muted)]">
                   Log a few check-ins to unlock the provisional analysis.
                 </p>
@@ -243,83 +348,6 @@ export function ActiveExperimentPage() {
                   <StatGrid stats={preview.data} provisional />
                 </>
               )}
-            </section>
-          )}
-
-          <div className="mb-8 flex flex-wrap gap-3">
-            {data.status === 'Draft' && (
-              <button
-                type="button"
-                onClick={() => start.mutate()}
-                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white"
-              >
-                Start
-              </button>
-            )}
-            {data.status === 'Active' && (
-              <>
-                <button
-                  type="button"
-                  onClick={() => complete.mutate()}
-                  className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white"
-                >
-                  Complete & compute verdict
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowStopPrompt(true)}
-                  className="rounded-md bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-semibold"
-                >
-                  Stop
-                </button>
-              </>
-            )}
-            {data.result && (
-              <Link
-                to={`/app/experiments/${id}/result`}
-                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white"
-              >
-                View result
-              </Link>
-            )}
-          </div>
-
-          {showStopPrompt && data.status === 'Active' && (
-            <section className="mb-8 rounded-2xl border border-amber-300 bg-amber-50 p-5">
-              <h2 className="text-xl text-amber-950">Stop this experiment?</h2>
-              <p className="mt-1 text-sm text-amber-950/80">
-                Optional: note why you are stopping. You can still review check-ins afterward.
-              </p>
-              <label className="mt-4 block text-sm text-amber-950">
-                <span className="mb-1 block">Reason (optional)</span>
-                <input
-                  type="text"
-                  value={stopReason}
-                  onChange={(e) => setStopReason(e.target.value)}
-                  className="w-full rounded-md border border-amber-300 bg-white px-3 py-2"
-                  placeholder="e.g. schedule conflict, safety concern"
-                />
-              </label>
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={confirmStop}
-                  disabled={stop.isPending}
-                  className="rounded-md bg-amber-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                >
-                  {stop.isPending ? 'Stopping…' : 'Confirm stop'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowStopPrompt(false)
-                    setStopReason('')
-                  }}
-                  className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-amber-950"
-                >
-                  Cancel
-                </button>
-              </div>
             </section>
           )}
 

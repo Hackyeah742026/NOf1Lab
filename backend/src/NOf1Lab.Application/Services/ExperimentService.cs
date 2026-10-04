@@ -292,10 +292,27 @@ public sealed class ExperimentService(IAppDbContext db, ICsvImportParser csvImpo
             return Result<ExperimentResultDto>.Fail(Error.NotFound("Experiment.NotFound", "Experiment was not found."));
         }
 
-        if (experiment.Status != ExperimentStatus.Active)
+        // Active or Stopped (user stop / safety) may finalize a verdict; Draft cannot.
+        // Completed: return existing result when present, otherwise conflict.
+        if (experiment.Status == ExperimentStatus.Completed)
+        {
+            if (experiment.Result is not null)
+            {
+                return Result<ExperimentResultDto>.Ok(ToResultDto(experiment.Result));
+            }
+
+            return Result<ExperimentResultDto>.Fail(
+                Error.Conflict(
+                    "Experiment.InvalidStatus",
+                    "Experiment is already completed but has no result."));
+        }
+
+        if (experiment.Status is not (ExperimentStatus.Active or ExperimentStatus.Stopped))
         {
             return Result<ExperimentResultDto>.Fail(
-                Error.Conflict("Experiment.InvalidStatus", "Only active experiments can be completed."));
+                Error.Conflict(
+                    "Experiment.InvalidStatus",
+                    "Only active or stopped experiments can be completed."));
         }
 
         if (experiment.Result is not null)

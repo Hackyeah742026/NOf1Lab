@@ -98,6 +98,7 @@ export function ResultPage() {
           <MetricPhaseChart
             className="animate-rise-delay mb-8"
             checkIns={checkIns.data ?? []}
+            isLoading={checkIns.isPending}
             metricLabel={metricLabel}
             phaseALabel={phaseALabel}
             phaseBLabel={phaseBLabel}
