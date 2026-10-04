@@ -5,6 +5,16 @@ using NOf1Lab.Infrastructure.DependencyInjection;
 using NOf1Lab.Infrastructure.Persistence;
 using Scalar.AspNetCore;
 
+var rootEnv = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "..", ".env"));
+if (!File.Exists(rootEnv))
+{
+    rootEnv = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".env"));
+}
+if (File.Exists(rootEnv))
+{
+    DotNetEnv.Env.Load(rootEnv);
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.ConfigureHttpJsonOptions(options =>

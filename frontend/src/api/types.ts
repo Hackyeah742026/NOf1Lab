@@ -64,3 +64,10 @@ export type CheckIn = {
   notes?: string | null
   safetyFlag: boolean
 }
+
+export type ExplainResponse = {
+  explanation: string
+  suggestedNextTemplateKey?: string | null
+  evidenceKeys: string[]
+  usedFallback: boolean
+}

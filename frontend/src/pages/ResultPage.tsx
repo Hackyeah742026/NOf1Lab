@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
-import { fetchExperiment, fetchResult } from '../api/experiments'
+import { explainExperiment, fetchExperiment, fetchResult } from '../api/experiments'
 import { AppShell } from '../components/AppShell'
 import { Disclaimer } from '../components/Disclaimer'
 
@@ -18,6 +18,10 @@ export function ResultPage() {
     queryFn: () => fetchResult(id),
     enabled: Boolean(id),
     retry: false,
+  })
+
+  const explain = useMutation({
+    mutationFn: () => explainExperiment(id),
   })
 
   const data = result.data ?? experiment.data?.result
@@ -64,6 +68,40 @@ export function ResultPage() {
             <Stat label="Samples A" value={data.sampleSizeA} />
             <Stat label="Samples B" value={data.sampleSizeB} />
           </div>
+
+          <section className="mb-8 rounded-lg border border-emerald-900/10 bg-white/70 p-5">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-2xl">AI explanation</h2>
+              <button
+                type="button"
+                onClick={() => explain.mutate()}
+                disabled={explain.isPending}
+                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              >
+                {explain.isPending ? 'Explaining…' : 'Explain my result'}
+              </button>
+            </div>
+            {explain.data && (
+              <>
+                <p className="leading-relaxed text-[var(--color-ink)]">{explain.data.explanation}</p>
+                <p className="mt-3 text-xs text-[var(--color-muted)]">
+                  Evidence keys: {explain.data.evidenceKeys.join(', ')}
+                  {explain.data.usedFallback ? ' · offline fallback' : ''}
+                </p>
+                {explain.data.suggestedNextTemplateKey && (
+                  <Link
+                    to="/app/templates"
+                    className="mt-4 inline-block text-sm font-semibold text-[var(--color-accent)] hover:underline"
+                  >
+                    Suggested next: {explain.data.suggestedNextTemplateKey}
+                  </Link>
+                )}
+              </>
+            )}
+            {explain.isError && (
+              <p className="text-sm text-red-700">Could not load explanation.</p>
+            )}
+          </section>
 
           <div className="mb-8 flex flex-wrap gap-3">
             <Link

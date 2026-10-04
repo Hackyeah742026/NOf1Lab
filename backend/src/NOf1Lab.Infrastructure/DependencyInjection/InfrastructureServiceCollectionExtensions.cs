@@ -5,6 +5,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using NOf1Lab.Application.Abstractions;
+using NOf1Lab.Infrastructure.Ai;
 using NOf1Lab.Infrastructure.Auth;
 using NOf1Lab.Infrastructure.Import;
 using NOf1Lab.Infrastructure.Persistence;
@@ -16,6 +17,15 @@ public static class InfrastructureServiceCollectionExtensions
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
+        services.Configure<GeminiOptions>(options =>
+        {
+            configuration.GetSection(GeminiOptions.SectionName).Bind(options);
+            if (string.IsNullOrWhiteSpace(options.ApiKey))
+            {
+                options.ApiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? string.Empty;
+            }
+        });
+
         var jwt = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>() ?? new JwtOptions();
 
         var connectionString = configuration.GetConnectionString("Default")
@@ -27,6 +37,7 @@ public static class InfrastructureServiceCollectionExtensions
         services.AddSingleton<IPasswordHasher, PasswordHasher>();
         services.AddSingleton<IJwtTokenService, JwtTokenService>();
         services.AddSingleton<ICsvImportParser, CsvImportParser>();
+        services.AddHttpClient<IAiExplainer, GeminiExplainer>();
 
         services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             .AddJwtBearer(options =>

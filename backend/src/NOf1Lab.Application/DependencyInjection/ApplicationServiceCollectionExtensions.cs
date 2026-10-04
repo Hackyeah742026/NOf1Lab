@@ -10,6 +10,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<AuthService>();
         services.AddScoped<TemplateService>();
         services.AddScoped<ExperimentService>();
+        services.AddScoped<ExplainService>();
         return services;
     }
 }

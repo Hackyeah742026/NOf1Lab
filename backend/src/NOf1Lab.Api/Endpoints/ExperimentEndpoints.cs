@@ -85,8 +85,11 @@ public static class ExperimentEndpoints
             return result.ToHttpResult();
         }).WithName("GetExperimentResult");
 
-        group.MapPost("/{id:guid}/explain", () => Results.StatusCode(StatusCodes.Status501NotImplemented))
-            .WithName("ExplainExperiment");
+        group.MapPost("/{id:guid}/explain", async (Guid id, HttpContext http, ExplainService explain, CancellationToken ct) =>
+        {
+            var result = await explain.ExplainAsync(http.User.GetUserId(), id, ct);
+            return result.ToHttpResult();
+        }).WithName("ExplainExperiment");
 
         return app;
     }

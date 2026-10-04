@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\NOf1Lab.Domain\NOf1Lab.Domain.csproj" />
+    <ProjectReference Include="..\..\src\NOf1Lab.Application\NOf1Lab.Application.csproj" />
   </ItemGroup>
 
 </Project>

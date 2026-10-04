@@ -37,12 +37,13 @@ public sealed class ExperimentService(IAppDbContext db, ICsvImportParser csvImpo
 
     public async Task<Result<IReadOnlyList<ExperimentDto>>> ListAsync(Guid userId, CancellationToken ct = default)
     {
-        var experiments = await db.Experiments.AsNoTracking()
+        var experiments = (await db.Experiments.AsNoTracking()
             .Include(e => e.Template)
             .Include(e => e.Result)
             .Where(e => e.UserId == userId)
+            .ToListAsync(ct))
             .OrderByDescending(e => e.CreatedAt)
-            .ToListAsync(ct);
+            .ToList();
 
         var ids = experiments.Select(e => e.Id).ToList();
         var counts = await db.CheckIns.AsNoTracking()
