@@ -32,6 +32,19 @@ public sealed record ExperimentResultDto(
     Verdict Verdict,
     string EvidenceJson);
 
+public sealed record AnalysisPreviewDto(
+    decimal MeanA,
+    decimal MeanB,
+    decimal Delta,
+    decimal EffectSize,
+    decimal AdherenceA,
+    decimal AdherenceB,
+    int SampleSizeA,
+    int SampleSizeB,
+    Verdict Verdict,
+    bool IsProvisional,
+    string? EvidenceJson);
+
 public sealed record ExperimentDto(
     Guid Id,
     string TemplateKey,

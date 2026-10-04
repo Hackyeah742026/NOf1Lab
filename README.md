@@ -62,6 +62,7 @@ Working demo path:
 - JWT auth + SQLite persistence
 - Templates, experiment lifecycle, check-ins, CSV import, safety stop
 - Domain `ExperimentAnalyzer` (unit tested) + Keep/Drop/Modify/Inconclusive
+- Mid-run provisional stats: `GET /api/experiments/{id}/analysis/preview` (Active/Stopped; does not complete)
 - Gemini explain with number validation + offline fallback
 - Frontend: Landing, Login, Dashboard, Templates, Active check-in, Result
 - Demo script: `docs/demo-script.md`

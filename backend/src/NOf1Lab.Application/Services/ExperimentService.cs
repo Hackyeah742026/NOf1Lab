@@ -353,6 +353,58 @@ public sealed class ExperimentService(IAppDbContext db, ICsvImportParser csvImpo
         return Result<ExperimentResultDto>.Ok(ToResultDto(experiment.Result));
     }
 
+    public async Task<Result<AnalysisPreviewDto>> PreviewAnalysisAsync(
+        Guid userId,
+        Guid experimentId,
+        CancellationToken ct = default)
+    {
+        var experiment = await LoadOwnedAsync(userId, experimentId, ct);
+        if (experiment is null)
+        {
+            return Result<AnalysisPreviewDto>.Fail(
+                Error.NotFound("Experiment.NotFound", "Experiment was not found."));
+        }
+
+        if (experiment.Status == ExperimentStatus.Completed)
+        {
+            return Result<AnalysisPreviewDto>.Fail(
+                Error.Conflict(
+                    "Experiment.UseResult",
+                    "Experiment is completed; use GET /api/experiments/{id}/result instead of preview."));
+        }
+
+        if (experiment.Status is not (ExperimentStatus.Active or ExperimentStatus.Stopped))
+        {
+            return Result<AnalysisPreviewDto>.Fail(
+                Error.Conflict(
+                    "Experiment.InvalidStatus",
+                    "Preview is only available for active or stopped experiments."));
+        }
+
+        var analysis = ExperimentAnalyzer.Analyze(new AnalysisInput(
+            experiment.CheckIns.Select(c => new AnalysisCheckIn(c.Day, c.Phase, c.MetricValue, c.Adhered)).ToList(),
+            experiment.Template?.HigherIsBetter ?? true));
+
+        if (analysis.IsFailure)
+        {
+            return Result<AnalysisPreviewDto>.Fail(analysis.Errors);
+        }
+
+        var output = analysis.Value;
+        return Result<AnalysisPreviewDto>.Ok(new AnalysisPreviewDto(
+            output.MeanA,
+            output.MeanB,
+            output.Delta,
+            output.EffectSize,
+            output.AdherenceA,
+            output.AdherenceB,
+            output.SampleSizeA,
+            output.SampleSizeB,
+            output.Verdict,
+            IsProvisional: true,
+            output.EvidenceJson));
+    }
+
     private async Task<Experiment?> LoadOwnedAsync(Guid userId, Guid id, CancellationToken ct) =>
         await db.Experiments
             .Include(e => e.Template)

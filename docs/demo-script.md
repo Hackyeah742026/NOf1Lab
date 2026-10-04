@@ -6,5 +6,6 @@
 4. **Explain (20s)** — Click “Explain my result” (Gemini if keyed, otherwise fallback that still cites numbers).
 5. **Templates (30s)** — Show sport / physical / mental / lifestyle coverage; start Morning light.
 6. **Check-in (40s)** — Log one day (slider + adherence). Mention safety stop checkbox.
-7. **Import shortcut (30s)** — Or import `data/samples/earlier-bedtime-demo.csv`, complete, show verdict.
-8. **Close (10s)** — “Code calculates. AI only explains. Not medical advice.”
+7. **Mid-run preview (20s)** — With check-ins in both phases, open charts / call `GET /api/experiments/{id}/analysis/preview` for provisional stats (does not complete the run).
+8. **Import shortcut (30s)** — Or import `data/samples/earlier-bedtime-demo.csv`, complete, show verdict.
+9. **Close (10s)** — “Code calculates. AI only explains. Not medical advice.”

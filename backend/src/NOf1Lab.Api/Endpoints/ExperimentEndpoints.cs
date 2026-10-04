@@ -79,6 +79,12 @@ public static class ExperimentEndpoints
             return result.ToHttpResult();
         }).WithName("CompleteExperiment");
 
+        group.MapGet("/{id:guid}/analysis/preview", async (Guid id, HttpContext http, ExperimentService experiments, CancellationToken ct) =>
+        {
+            var result = await experiments.PreviewAnalysisAsync(http.User.GetUserId(), id, ct);
+            return result.ToHttpResult();
+        }).WithName("PreviewAnalysis");
+
         group.MapGet("/{id:guid}/result", async (Guid id, HttpContext http, ExperimentService experiments, CancellationToken ct) =>
         {
             var result = await experiments.GetResultAsync(http.User.GetUserId(), id, ct);
