@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: nof1lab-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /health
+    envVars:
+      - key: Jwt__Key
+        generateValue: true
+      - key: Cors__AllowedOrigins
+        value: https://*.vercel.app
+      - key: GEMINI_API_KEY
+        sync: false
