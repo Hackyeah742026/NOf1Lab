@@ -11,6 +11,7 @@ public static class ApplicationServiceCollectionExtensions
         services.AddScoped<TemplateService>();
         services.AddScoped<ExperimentService>();
         services.AddScoped<ExplainService>();
+        services.AddScoped<DemoService>();
         return services;
     }
 }

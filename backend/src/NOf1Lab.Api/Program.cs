@@ -52,6 +52,7 @@ app.MapHealthEndpoints();
 app.MapAuthEndpoints();
 app.MapTemplateEndpoints();
 app.MapExperimentEndpoints();
+app.MapDemoEndpoints();
 
 app.Run();
 
