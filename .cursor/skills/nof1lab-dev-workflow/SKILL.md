@@ -68,6 +68,7 @@ Return to the user:
 - Do not skip the reviewer step after implementation work
 - Do not have `reviewer` rewrite the feature; implementers apply fixes
 - Do not edit the opposite side inside an implementer prompt (FE agent stays in `frontend/`, BE in `backend/`)
+-Do not launch `frontend-engineer` and `backender` if `reviewer` reports no Critical items
 - Preserve NOf1Lab demo path: JWT demo user, seeded templates/completed experiment, computed verdicts (not AI-invented)
 
 ## Example
