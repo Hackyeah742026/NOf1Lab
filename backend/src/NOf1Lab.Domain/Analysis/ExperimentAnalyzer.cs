@@ -34,6 +34,11 @@ public static class ExperimentAnalyzer
             phaseB.Count,
             input);
 
+        var confidence = ReliabilityAnalyzer.Confidence(
+            phaseA.Select(c => (double)c.MetricValue).ToList(),
+            phaseB.Select(c => (double)c.MetricValue).ToList());
+        var warnings = ReliabilityAnalyzer.Warnings(phaseA, phaseB, adherenceA, adherenceB, delta);
+
         var evidence = new
         {
             meanA,
@@ -47,6 +52,16 @@ public static class ExperimentAnalyzer
             sampleSizeB = phaseB.Count,
             higherIsBetter = input.HigherIsBetter,
             verdict = verdict.ToString(),
+            confidence = new
+            {
+                pValue = confidence.PValue,
+                ciLow = confidence.CiLow,
+                ciHigh = confidence.CiHigh,
+                strength = confidence.Strength,
+                method = confidence.ExactPermutation ? "exact permutation test + bootstrap 95% CI" : "permutation test + bootstrap 95% CI",
+                permutations = confidence.Permutations
+            },
+            warnings = warnings.Select(w => new { code = w.Code, message = w.Message }).ToList(),
             rules = new
             {
                 input.MinAdherencePercent,

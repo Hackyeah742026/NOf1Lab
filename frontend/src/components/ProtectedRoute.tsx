@@ -1,13 +1,15 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
+import { LogoMark } from './Logo'
 
 export function ProtectedRoute() {
   const { user, loading } = useAuth()
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen max-w-3xl items-center px-6">
-        <p className="text-[var(--color-muted)]">Loading…</p>
+      <main className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <LogoMark className="h-10 w-10 animate-pulse" />
+        <p className="text-sm text-[var(--color-muted)]">Loading your lab…</p>
       </main>
     )
   }

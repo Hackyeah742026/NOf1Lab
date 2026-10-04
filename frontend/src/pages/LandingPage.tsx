@@ -4,10 +4,28 @@ import { ApiError } from '../api/client'
 import { fetchShowcase } from '../api/demo'
 import type { CheckIn } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
+import { VerdictBadge } from '../components/Badge'
 import { Button, buttonClass } from '../components/Button'
 import { Disclaimer } from '../components/Disclaimer'
+import { Alert } from '../components/Feedback'
+import { Logo } from '../components/Logo'
 import { MetricPhaseChart } from '../components/MetricPhaseChart'
 import { DEMO_EMAIL, DEMO_PASSWORD } from '../lib/demoAccount'
+
+const steps = [
+  {
+    title: 'Pick a question',
+    detail: 'Choose a template — earlier bedtime, morning light, training load — and state your hypothesis.',
+  },
+  {
+    title: 'Log for 30 seconds a day',
+    detail: 'One metric, one adherence tick. Baseline phase A first, then the change in phase B.',
+  },
+  {
+    title: 'Get a computed verdict',
+    detail: 'The stats engine compares the phases and calls Keep, Drop, Modify, or Inconclusive.',
+  },
+] as const
 
 const features = [
   {
@@ -67,118 +85,151 @@ export function LandingPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="glow-orb absolute -left-24 top-10 h-72 w-72 rounded-full bg-emerald-300/30 blur-3xl" />
-        <div className="glow-orb absolute -right-16 bottom-10 h-80 w-80 rounded-full bg-amber-200/40 blur-3xl" />
-        <div
-          className="absolute inset-0 opacity-[0.12]"
-          style={{
-            backgroundImage:
-              'linear-gradient(rgba(19,40,31,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(19,40,31,0.08) 1px, transparent 1px)',
-            backgroundSize: '48px 48px',
-          }}
-        />
-      </div>
+    <div className="relative min-h-screen overflow-hidden">
+      <header className="relative z-10 mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
+        <Logo />
+        <Link to={user ? '/app' : '/login'} className={buttonClass('secondary', 'py-2')}>
+          {user ? 'Open dashboard' : 'Sign in'}
+        </Link>
+      </header>
 
-      <section className="relative mx-auto flex min-h-[100svh] max-w-5xl flex-col justify-center px-6 py-16">
-        <p className="animate-rise mb-5 text-sm font-semibold uppercase tracking-[0.22em] text-[var(--color-accent)]">
-          Personal experiment OS
-        </p>
-        <h1 className="animate-rise-delay mb-5 max-w-3xl text-5xl leading-[1.05] text-[var(--color-ink)] md:text-7xl">
-          N-of-1 Lab
-        </h1>
-        <p className="animate-rise-late mb-10 max-w-xl text-lg leading-relaxed text-[var(--color-muted)] md:text-xl">
-          Scattered health data rarely becomes a decision. Run a short A/B
-          experiment on yourself, log a few signals, and get a computed Keep /
-          Drop / Modify verdict.
-        </p>
+      <main>
+        <section className="relative mx-auto max-w-6xl px-6 pt-16 pb-20 md:pt-24 md:pb-28">
+          <p className="animate-rise mb-6 inline-flex items-center gap-2 rounded-full bg-white/80 px-3.5 py-1.5 text-sm font-semibold text-[var(--color-accent)] shadow-sm ring-1 ring-[var(--color-line)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-accent)]" />
+            Personal experiment OS
+          </p>
+          <h1 className="animate-rise-delay max-w-4xl text-5xl leading-[1.02] text-[var(--color-ink)] sm:text-6xl md:text-[5.25rem]">
+            Stop guessing what works.{' '}
+            <span className="italic text-[var(--color-accent)]">Test it on yourself.</span>
+          </h1>
+          <p className="animate-rise-late mt-7 max-w-xl text-lg leading-relaxed text-[var(--color-muted)] md:text-xl">
+            Scattered health data rarely becomes a decision. Run a short A/B experiment on yourself,
+            log a few signals, and get a computed Keep / Drop / Modify verdict.
+          </p>
 
-        <div className="animate-rise-late mb-8 flex flex-wrap gap-3">
-          <Link to={user ? '/app' : '/login'} className={buttonClass('primary', 'px-7 py-3 text-base')}>
-            {user ? 'Open dashboard' : 'Start an experiment'}
-          </Link>
-          <Link
-            to={user ? '/app/templates' : '/login'}
-            className={buttonClass('secondary', 'px-7 py-3 text-base')}
-          >
-            {user ? 'Browse templates' : 'Sign in to browse'}
-          </Link>
-          <Button
-            variant="ghost"
-            className="px-7 py-3 text-base"
-            disabled={demoBusy}
-            onClick={() => void openDemoResult()}
-          >
-            {demoBusy ? 'Opening…' : 'Open demo result'}
-          </Button>
-        </div>
-
-        {demoError && <p className="mb-4 text-sm text-red-700">{demoError}</p>}
-
-        <Disclaimer className="animate-rise-late max-w-xl" />
-      </section>
-
-      <section className="relative border-t border-emerald-900/10 bg-white/35 backdrop-blur-sm">
-        <div className="mx-auto max-w-5xl px-6 py-14">
-          <div className="mb-6 max-w-xl">
-            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
-              Product preview
-            </p>
-            <h2 className="text-3xl text-[var(--color-ink)] md:text-4xl">
-              A calm Keep / Drop / Modify call from your own A/B run
-            </h2>
-            <p className="mt-3 text-[var(--color-muted)]">
-              Example earlier-bedtime series — illustrative sample, not live account data.
-            </p>
+          <div className="animate-rise-late mt-10 flex flex-wrap items-center gap-3">
+            <Link to={user ? '/app' : '/login'} className={buttonClass('primary', 'px-7 py-3.5 text-base')}>
+              {user ? 'Open dashboard' : 'Start an experiment'}
+              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden>
+                <path
+                  d="M4 10h12m-4-4 4 4-4 4"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </Link>
+            <Button
+              variant="secondary"
+              className="px-7 py-3.5 text-base"
+              disabled={demoBusy}
+              onClick={() => void openDemoResult()}
+            >
+              {demoBusy ? 'Opening…' : 'See a demo result'}
+            </Button>
           </div>
 
-          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch">
-            <div className="flex flex-col justify-between rounded-2xl border border-emerald-900/10 bg-[var(--color-panel)] p-6 shadow-sm md:p-8">
-              <div>
-                <p className="text-sm uppercase tracking-[0.16em] text-[var(--color-muted)]">
-                  Verdict preview
-                </p>
-                <span className="mt-4 inline-flex items-center rounded-full bg-[var(--color-accent-soft)] px-3 py-1 text-sm font-bold uppercase tracking-wide text-[var(--color-accent)]">
-                  Keep
-                </span>
-                <p className="mt-5 text-4xl text-[var(--color-ink)] md:text-5xl">Earlier bedtime</p>
-                <p className="mt-3 max-w-sm text-sm leading-relaxed text-[var(--color-muted)]">
-                  Phase B energy rose versus baseline. Stats engine suggests keeping the habit —
-                  AI can narrate the numbers, never invent them.
-                </p>
-              </div>
-              <div className="mt-8 h-2 overflow-hidden rounded-full bg-emerald-900/10">
-                <div className="h-full w-[62%] rounded-full bg-[var(--color-accent)]" />
-              </div>
-            </div>
+          {demoError && (
+            <Alert className="mt-5 max-w-xl">{demoError}</Alert>
+          )}
 
-            <MetricPhaseChart
-              checkIns={previewCheckIns}
-              metricLabel="Energy (1–10)"
-              phaseALabel="Usual bedtime"
-              phaseBLabel="Earlier bedtime"
-              meanA={5.2}
-              meanB={7.2}
-            />
+          <Disclaimer className="animate-rise-late mt-8 max-w-xl" />
+        </section>
+
+        <section className="relative border-t border-[var(--color-line)] bg-white/50">
+          <div className="mx-auto max-w-6xl px-6 py-16">
+            <p className="eyebrow mb-3">How it works</p>
+            <ol className="grid gap-4 md:grid-cols-3">
+              {steps.map((step, index) => (
+                <li key={step.title} className="card p-6">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--color-accent-soft)] font-display text-lg text-[var(--color-accent)]">
+                    {index + 1}
+                  </span>
+                  <h2 className="mt-4 text-xl text-[var(--color-ink)]">{step.title}</h2>
+                  <p className="mt-2 text-sm leading-relaxed text-[var(--color-muted)]">{step.detail}</p>
+                </li>
+              ))}
+            </ol>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <section className="relative border-t border-emerald-900/10 bg-white/40 backdrop-blur-sm">
-        <div className="mx-auto grid max-w-5xl gap-6 px-6 py-12 sm:grid-cols-2 lg:grid-cols-4">
-          {features.map((feature) => (
-            <div key={feature.label} className="min-w-0">
-              <p className="mb-1.5 font-body text-sm font-bold tracking-wide text-[var(--color-accent)]">
-                {feature.label}
-              </p>
-              <p className="font-body text-sm leading-relaxed text-[var(--color-muted)]">
-                {feature.detail}
+        <section className="relative border-t border-[var(--color-line)]">
+          <div className="mx-auto max-w-6xl px-6 py-16 md:py-20">
+            <div className="mb-8 max-w-2xl">
+              <p className="eyebrow mb-3">Product preview</p>
+              <h2 className="text-3xl leading-tight text-[var(--color-ink)] md:text-[2.6rem]">
+                A calm verdict from your own A/B run
+              </h2>
+              <p className="mt-3 text-[var(--color-muted)]">
+                Example earlier-bedtime series — illustrative sample, not live account data.
               </p>
             </div>
-          ))}
+
+            <div className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr] lg:items-stretch">
+              <div className="card flex flex-col justify-between bg-gradient-to-br from-emerald-50 to-white p-7 md:p-8">
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="eyebrow">Verdict</p>
+                    <VerdictBadge verdict="Keep" />
+                  </div>
+                  <p className="mt-6 font-display text-4xl leading-tight text-[var(--color-ink)] md:text-5xl">
+                    Earlier bedtime
+                  </p>
+                  <p className="mt-3 max-w-sm text-sm leading-relaxed text-[var(--color-muted)]">
+                    Phase B energy rose versus baseline. The stats engine suggests keeping the habit —
+                    AI can narrate the numbers, never invent them.
+                  </p>
+                </div>
+                <dl className="mt-8 grid grid-cols-3 gap-3 border-t border-[var(--color-line)] pt-5">
+                  <div>
+                    <dt className="text-xs text-[var(--color-subtle)]">Mean A</dt>
+                    <dd className="font-display text-2xl tabular-nums">5.2</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-[var(--color-subtle)]">Mean B</dt>
+                    <dd className="font-display text-2xl tabular-nums">7.2</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-[var(--color-subtle)]">Change</dt>
+                    <dd className="font-display text-2xl tabular-nums text-emerald-700">+38%</dd>
+                  </div>
+                </dl>
+              </div>
+
+              <MetricPhaseChart
+                checkIns={previewCheckIns}
+                metricLabel="Energy (1–10)"
+                phaseALabel="Usual bedtime"
+                phaseBLabel="Earlier bedtime"
+                meanA={5.2}
+                meanB={7.2}
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="relative border-t border-[var(--color-line)] bg-white/50">
+          <div className="mx-auto grid max-w-6xl gap-8 px-6 py-14 sm:grid-cols-2 lg:grid-cols-4">
+            {features.map((feature) => (
+              <div key={feature.label} className="min-w-0 border-l-2 border-[var(--color-accent-soft)] pl-4">
+                <p className="mb-1.5 text-sm font-bold tracking-wide text-[var(--color-accent)]">
+                  {feature.label}
+                </p>
+                <p className="text-sm leading-relaxed text-[var(--color-muted)]">{feature.detail}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-[var(--color-line)]">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-8">
+          <Logo />
+          <Disclaimer />
         </div>
-      </section>
-    </main>
+      </footer>
+    </div>
   )
 }

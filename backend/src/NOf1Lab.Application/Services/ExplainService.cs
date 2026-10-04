@@ -44,7 +44,8 @@ public sealed class ExplainService(IAppDbContext db, IAiExplainer aiExplainer)
         if (!validated)
         {
             var fallback = BuildFallback(experiment.Template?.Title ?? experiment.TemplateKey, result.Verdict.ToString(),
-                result.MeanA, result.MeanB, result.Delta, result.EffectSize, result.AdherenceA, result.AdherenceB);
+                result.MeanA, result.MeanB, result.Delta, result.EffectSize, result.AdherenceA, result.AdherenceB)
+                + DescribeConfidence(result.EvidenceJson);
             return Result<ExplainDto>.Ok(new ExplainDto(
                 fallback,
                 SuggestNext(experiment.TemplateKey),
@@ -53,7 +54,7 @@ public sealed class ExplainService(IAppDbContext db, IAiExplainer aiExplainer)
         }
 
         return Result<ExplainDto>.Ok(new ExplainDto(
-            response.Explanation,
+            response.UsedFallback ? response.Explanation + DescribeConfidence(result.EvidenceJson) : response.Explanation,
             response.SuggestedNextTemplateKey ?? SuggestNext(experiment.TemplateKey),
             response.EvidenceKeys,
             response.UsedFallback));
@@ -93,6 +94,38 @@ public sealed class ExplainService(IAppDbContext db, IAiExplainer aiExplainer)
         $"Phase A mean was {meanA} and phase B mean was {meanB} (delta {delta}, effect size {effectSize}). " +
         $"Adherence was {adherenceA}% in A and {adherenceB}% in B. " +
         "This is coaching/self-experimentation support only — not medical advice.";
+
+    /// <summary>Plain-language line built from the stats engine's confidence block, if present.</summary>
+    public static string DescribeConfidence(string evidenceJson)
+    {
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(evidenceJson);
+            if (!doc.RootElement.TryGetProperty("confidence", out var confidence))
+            {
+                return string.Empty;
+            }
+
+            var inv = System.Globalization.CultureInfo.InvariantCulture;
+            var strength = confidence.GetProperty("strength").GetString();
+            var pValue = confidence.GetProperty("pValue").GetDecimal();
+            var low = confidence.GetProperty("ciLow").GetDecimal();
+            var high = confidence.GetProperty("ciHigh").GetDecimal();
+            var line = $" Evidence strength: {strength} (permutation p = {pValue.ToString("0.000", inv)}; " +
+                       $"95% range for the change {low.ToString("+0.00;-0.00;0.00", inv)} to {high.ToString("+0.00;-0.00;0.00", inv)}).";
+
+            if (doc.RootElement.TryGetProperty("warnings", out var warnings) && warnings.GetArrayLength() > 0)
+            {
+                line += " Caveat: " + warnings[0].GetProperty("message").GetString();
+            }
+
+            return line;
+        }
+        catch (Exception ex) when (ex is System.Text.Json.JsonException or KeyNotFoundException or InvalidOperationException or FormatException)
+        {
+            return string.Empty;
+        }
+    }
 
     private static string SuggestNext(string currentKey) => currentKey switch
     {

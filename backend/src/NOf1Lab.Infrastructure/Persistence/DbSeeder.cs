@@ -40,6 +40,39 @@ public static class DbSeeder
         {
             await SeedCompletedDemoExperimentAsync(db, demoUser.Id);
         }
+
+        await BackfillEvidenceAsync(db);
+    }
+
+    /// <summary>
+    /// Results computed before confidence stats existed get their evidence refreshed.
+    /// The stored verdict and headline numbers are left untouched.
+    /// </summary>
+    private static async Task BackfillEvidenceAsync(AppDbContext db)
+    {
+        var stale = await db.Experiments
+            .Include(e => e.Result)
+            .Include(e => e.CheckIns)
+            .Include(e => e.Template)
+            .Where(e => e.Result != null && !e.Result.EvidenceJson.Contains("\"confidence\""))
+            .ToListAsync();
+
+        foreach (var experiment in stale)
+        {
+            var analysis = Domain.Analysis.ExperimentAnalyzer.Analyze(new Domain.Analysis.AnalysisInput(
+                experiment.CheckIns.Select(c => new Domain.Analysis.AnalysisCheckIn(c.Day, c.Phase, c.MetricValue, c.Adhered, c.SafetyFlag)).ToList(),
+                experiment.Template?.HigherIsBetter ?? true));
+
+            if (analysis.IsSuccess)
+            {
+                experiment.Result!.EvidenceJson = analysis.Value.EvidenceJson;
+            }
+        }
+
+        if (stale.Count > 0)
+        {
+            await db.SaveChangesAsync();
+        }
     }
 
     /// <summary>
@@ -269,7 +302,7 @@ public static class DbSeeder
         }
 
         var analysis = Domain.Analysis.ExperimentAnalyzer.Analyze(new Domain.Analysis.AnalysisInput(
-            experiment.CheckIns.Select(c => new Domain.Analysis.AnalysisCheckIn(c.Day, c.Phase, c.MetricValue, c.Adhered)).ToList(),
+            experiment.CheckIns.Select(c => new Domain.Analysis.AnalysisCheckIn(c.Day, c.Phase, c.MetricValue, c.Adhered, c.SafetyFlag)).ToList(),
             HigherIsBetter: true)).Value;
 
         experiment.Result = new ExperimentResult

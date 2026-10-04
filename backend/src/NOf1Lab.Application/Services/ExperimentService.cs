@@ -321,7 +321,7 @@ public sealed class ExperimentService(IAppDbContext db, ICsvImportParser csvImpo
         }
 
         var analysis = ExperimentAnalyzer.Analyze(new AnalysisInput(
-            experiment.CheckIns.Select(c => new AnalysisCheckIn(c.Day, c.Phase, c.MetricValue, c.Adhered)).ToList(),
+            experiment.CheckIns.Select(c => new AnalysisCheckIn(c.Day, c.Phase, c.MetricValue, c.Adhered, c.SafetyFlag)).ToList(),
             experiment.Template?.HigherIsBetter ?? true));
 
         if (analysis.IsFailure)
@@ -399,7 +399,7 @@ public sealed class ExperimentService(IAppDbContext db, ICsvImportParser csvImpo
         }
 
         var analysis = ExperimentAnalyzer.Analyze(new AnalysisInput(
-            experiment.CheckIns.Select(c => new AnalysisCheckIn(c.Day, c.Phase, c.MetricValue, c.Adhered)).ToList(),
+            experiment.CheckIns.Select(c => new AnalysisCheckIn(c.Day, c.Phase, c.MetricValue, c.Adhered, c.SafetyFlag)).ToList(),
             experiment.Template?.HigherIsBetter ?? true));
 
         if (analysis.IsFailure)

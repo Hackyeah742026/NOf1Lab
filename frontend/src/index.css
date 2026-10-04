@@ -1,14 +1,24 @@
 @import "tailwindcss";
 
 :root {
-  --color-bg: #eef5f1;
-  --color-ink: #13281f;
-  --color-muted: #4a6658;
+  --color-bg: #f3f6f2;
+  --color-ink: #12261d;
+  --color-muted: #52695d;
+  --color-subtle: #7d9186;
+  --color-line: rgba(18, 38, 29, 0.1);
+  --color-line-strong: rgba(18, 38, 29, 0.18);
+  --color-surface: #ffffff;
+  --color-surface-muted: #f8faf7;
   --color-accent: #1c6b4a;
   --color-accent-hover: color-mix(in srgb, var(--color-accent) 88%, #000);
-  --color-accent-soft: #d5ebe0;
-  --color-accent-soft-hover: color-mix(in srgb, var(--color-accent-soft) 88%, #000);
-  --color-panel: rgba(255, 255, 255, 0.78);
+  --color-accent-soft: #dcefe4;
+  --color-accent-soft-hover: color-mix(in srgb, var(--color-accent-soft) 90%, #000);
+  --color-phase-a: #1c6b4a;
+  --color-phase-b: #b0742f;
+  --color-phase-b-soft: #f6e9d6;
+  --color-panel: rgba(255, 255, 255, 0.82);
+  --shadow-card: 0 1px 2px rgba(18, 38, 29, 0.04), 0 8px 24px -12px rgba(18, 38, 29, 0.12);
+  --shadow-raised: 0 2px 4px rgba(18, 38, 29, 0.05), 0 20px 40px -20px rgba(18, 38, 29, 0.25);
   --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
   --font-body: "Source Sans 3", "Segoe UI", sans-serif;
 }
@@ -23,10 +33,12 @@ body {
   margin: 0;
   font-family: var(--font-body);
   color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
   background:
-    radial-gradient(1200px 700px at 10% -10%, #d9efe4 0%, transparent 55%),
-    radial-gradient(900px 500px at 100% 0%, #f3e8d8 0%, transparent 45%),
-    linear-gradient(180deg, #f8fbf9 0%, var(--color-bg) 55%, #e7f0ea 100%);
+    radial-gradient(1100px 600px at 0% -10%, #e0efe6 0%, transparent 60%),
+    radial-gradient(800px 480px at 100% -5%, #f4ebdc 0%, transparent 50%),
+    var(--color-bg);
+  background-attachment: fixed;
 }
 
 h1,
@@ -35,6 +47,10 @@ h3 {
   font-family: var(--font-display);
   font-weight: 560;
   letter-spacing: -0.02em;
+}
+
+::selection {
+  background: var(--color-accent-soft);
 }
 
 .font-display {
@@ -46,6 +62,126 @@ h3 {
   letter-spacing: normal;
 }
 
+@layer components {
+  /* Shared surfaces */
+  .card {
+    border-radius: 1.25rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface);
+    box-shadow: var(--shadow-card);
+  }
+
+  .card-muted {
+    border-radius: 1rem;
+    border: 1px solid var(--color-line);
+    background: var(--color-surface-muted);
+  }
+
+  .eyebrow {
+    font-family: var(--font-body);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--color-subtle);
+  }
+
+  /* Form fields */
+  .field {
+    width: 100%;
+    border-radius: 0.75rem;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-surface);
+    padding: 0.65rem 0.85rem;
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--color-ink);
+    transition: border-color 150ms, box-shadow 150ms;
+  }
+
+  .field::placeholder {
+    color: var(--color-subtle);
+  }
+
+  .field:focus {
+    outline: none;
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-accent) 16%, transparent);
+  }
+
+  .field:disabled {
+    opacity: 0.6;
+  }
+
+  .field-label {
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--color-muted);
+  }
+
+  input[type="checkbox"].check {
+    width: 1.1rem;
+    height: 1.1rem;
+    flex-shrink: 0;
+    accent-color: var(--color-accent);
+  }
+
+  /* Range slider */
+  input[type="range"].range {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 0.5rem;
+    border-radius: 999px;
+    background: linear-gradient(
+      to right,
+      var(--color-accent) 0%,
+      var(--color-accent) var(--range-fill, 50%),
+      var(--color-accent-soft) var(--range-fill, 50%),
+      var(--color-accent-soft) 100%
+    );
+    cursor: pointer;
+  }
+
+  input[type="range"].range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 999px;
+    background: #fff;
+    border: 3px solid var(--color-accent);
+    box-shadow: 0 2px 6px rgba(18, 38, 29, 0.2);
+  }
+
+  input[type="range"].range::-moz-range-thumb {
+    width: 1.2rem;
+    height: 1.2rem;
+    border-radius: 999px;
+    background: #fff;
+    border: 3px solid var(--color-accent);
+    box-shadow: 0 2px 6px rgba(18, 38, 29, 0.2);
+  }
+
+  input[type="range"].range:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 6px;
+  }
+
+  input[type="file"].file-input::file-selector-button {
+    margin-right: 0.75rem;
+    border: 0;
+    border-radius: 0.6rem;
+    background: var(--color-accent-soft);
+    padding: 0.5rem 0.9rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    cursor: pointer;
+  }
+}
+
+/* Motion */
 @keyframes rise-in {
   from {
     opacity: 0;
@@ -57,13 +193,21 @@ h3 {
   }
 }
 
-@keyframes soft-pulse {
-  0%,
-  100% {
-    opacity: 0.55;
+@keyframes fade-in {
+  from {
+    opacity: 0;
   }
-  50% {
-    opacity: 0.9;
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
   }
 }
 
@@ -79,6 +223,25 @@ h3 {
   animation: rise-in 900ms cubic-bezier(0.22, 1, 0.36, 1) 240ms both;
 }
 
-.glow-orb {
-  animation: soft-pulse 5s ease-in-out infinite;
+.animate-fade {
+  animation: fade-in 200ms ease-out both;
+}
+
+@layer components {
+.skeleton {
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, #e9efea 0%, #f5f8f5 50%, #e9efea 100%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s linear infinite;
+}
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-rise-delay,
+  .animate-rise-late,
+  .animate-fade,
+  .skeleton {
+    animation: none;
+  }
 }

@@ -1,8 +1,8 @@
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
+  ReferenceArea,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -10,6 +10,8 @@ import {
   YAxis,
 } from 'recharts'
 import type { CheckIn } from '../api/types'
+import { formatDay } from '../lib/verdict'
+import { Skeleton } from './Feedback'
 
 type MetricPhaseChartProps = {
   checkIns: CheckIn[]
@@ -21,18 +23,6 @@ type MetricPhaseChartProps = {
   meanA?: number | null
   meanB?: number | null
   className?: string
-}
-
-function formatDayLabel(day: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return day
-  const date = new Date(`${day}T12:00:00.000Z`)
-  if (Number.isNaN(date.getTime())) return day
-  return date.toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    timeZone: 'UTC',
-  })
 }
 
 type ChartPoint = {
@@ -49,6 +39,19 @@ function readCssVar(name: string, fallback: string) {
   return value || fallback
 }
 
+function LegendItem({ color, label, dashed = false }: { color: string; label: string; dashed?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {dashed ? (
+        <span className="w-4 border-t-2 border-dashed" style={{ borderColor: color }} />
+      ) : (
+        <span className="h-2.5 w-2.5 rounded-full" style={{ background: color }} />
+      )}
+      {label}
+    </span>
+  )
+}
+
 export function MetricPhaseChart({
   checkIns,
   isLoading = false,
@@ -59,32 +62,48 @@ export function MetricPhaseChart({
   meanB,
   className = '',
 }: MetricPhaseChartProps) {
+  const header = (
+    <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+      <div>
+        <p className="eyebrow">A/B time series</p>
+        <h3 className="mt-1 text-2xl text-[var(--color-ink)]">{metricLabel}</h3>
+      </div>
+    </div>
+  )
+
   if (isLoading) {
     return (
-      <div
-        className={`rounded-2xl border border-emerald-900/10 bg-white/70 px-5 py-8 text-center ${className}`}
-      >
-        <p className="text-sm text-[var(--color-muted)]">Loading chart…</p>
+      <div className={`card px-5 py-5 sm:px-6 ${className}`}>
+        {header}
+        <Skeleton className="h-64 w-full" />
       </div>
     )
   }
 
   if (checkIns.length === 0) {
     return (
-      <div
-        className={`rounded-2xl border border-emerald-900/10 bg-white/70 px-5 py-8 text-center ${className}`}
-      >
-        <p className="text-sm text-[var(--color-muted)]">
-          Chart appears once you log check-ins.
-        </p>
+      <div className={`card px-5 py-5 sm:px-6 ${className}`}>
+        {header}
+        <div className="flex h-48 flex-col items-center justify-center rounded-xl border border-dashed border-[var(--color-line-strong)] bg-[var(--color-surface-muted)] text-center">
+          <svg viewBox="0 0 24 24" className="mb-2 h-7 w-7 text-[var(--color-subtle)]" fill="none" aria-hidden>
+            <path
+              d="M4 19h16M6 15l4-4 3 3 5-6"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <p className="text-sm text-[var(--color-muted)]">The chart appears once you log check-ins.</p>
+        </div>
       </div>
     )
   }
 
-  const accent = readCssVar('--color-accent', '#1c6b4a')
-  const ink = readCssVar('--color-ink', '#13281f')
-  const muted = readCssVar('--color-muted', '#4a6658')
-  const phaseBColor = '#8a6a3d'
+  const phaseAColor = readCssVar('--color-phase-a', '#1c6b4a')
+  const phaseBColor = readCssVar('--color-phase-b', '#b0742f')
+  const ink = readCssVar('--color-ink', '#12261d')
+  const muted = readCssVar('--color-subtle', '#7d9186')
 
   const sorted = [...checkIns].sort((a, b) => a.day.localeCompare(b.day))
   const data: ChartPoint[] = sorted.map((checkIn) => ({
@@ -94,90 +113,80 @@ export function MetricPhaseChart({
     valueA: checkIn.phase === 'A' ? checkIn.metricValue : null,
     valueB: checkIn.phase === 'B' ? checkIn.metricValue : null,
   }))
+  const firstB = data.find((point) => point.phase === 'B')?.day
+  const lastDay = data[data.length - 1]?.day
+  const hasMeanA = meanA != null && Number.isFinite(meanA)
+  const hasMeanB = meanB != null && Number.isFinite(meanB)
 
   return (
-    <div
-      className={`rounded-2xl border border-emerald-900/10 bg-white/80 px-4 py-5 shadow-sm md:px-5 ${className}`}
-    >
-      <div className="mb-4 px-1">
-        <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-muted)]">
-          A/B time series
-        </p>
-        <h3 className="mt-1 text-2xl text-[var(--color-ink)]">{metricLabel}</h3>
+    <div className={`card px-4 py-5 sm:px-6 ${className}`}>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3 px-1">
+        <div>
+          <p className="eyebrow">A/B time series</p>
+          <h3 className="mt-1 text-2xl text-[var(--color-ink)]">{metricLabel}</h3>
+        </div>
+        <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-[var(--color-muted)]">
+          <LegendItem color={phaseAColor} label={`A · ${phaseALabel}`} />
+          <LegendItem color={phaseBColor} label={`B · ${phaseBLabel}`} />
+          {(hasMeanA || hasMeanB) && <LegendItem color={muted} label="Phase mean" dashed />}
+        </div>
       </div>
 
       <div className="h-72 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 8, right: 12, left: 0, bottom: 4 }}>
-            <CartesianGrid stroke="rgba(19, 40, 31, 0.08)" strokeDasharray="3 3" />
+          <LineChart data={data} margin={{ top: 8, right: 12, left: -8, bottom: 4 }}>
+            <CartesianGrid stroke="rgba(18, 38, 29, 0.07)" vertical={false} />
+            {firstB && lastDay && (
+              <ReferenceArea x1={firstB} x2={lastDay} fill={phaseBColor} fillOpacity={0.06} strokeOpacity={0} />
+            )}
             <XAxis
               dataKey="day"
               tick={{ fill: muted, fontSize: 11 }}
+              tickFormatter={(value) => formatDay(String(value))}
+              tickLine={false}
+              axisLine={{ stroke: 'rgba(18, 38, 29, 0.12)' }}
               tickMargin={8}
               minTickGap={28}
             />
             <YAxis
               tick={{ fill: muted, fontSize: 11 }}
               domain={['auto', 'auto']}
-              width={36}
+              tickLine={false}
+              axisLine={false}
+              width={40}
             />
             <Tooltip
+              cursor={{ stroke: 'rgba(18, 38, 29, 0.15)' }}
               contentStyle={{
-                background: 'rgba(255,255,255,0.96)',
-                border: '1px solid rgba(19, 40, 31, 0.12)',
-                borderRadius: 10,
+                background: '#fff',
+                border: '1px solid rgba(18, 38, 29, 0.1)',
+                borderRadius: 12,
+                boxShadow: '0 12px 24px -12px rgba(18,38,29,0.3)',
                 color: ink,
+                fontSize: 13,
               }}
               formatter={(value, name) => {
                 if (value == null) return ['—', String(name)]
-                const label =
-                  name === 'valueA' ? phaseALabel : name === 'valueB' ? phaseBLabel : String(name)
+                const label = name === 'valueA' ? phaseALabel : name === 'valueB' ? phaseBLabel : String(name)
                 return [value, label]
               }}
-              labelFormatter={(label) => formatDayLabel(String(label))}
+              labelFormatter={(label) => formatDay(String(label), true)}
             />
-            <Legend
-              formatter={(value) =>
-                value === 'valueA' ? phaseALabel : value === 'valueB' ? phaseBLabel : value
-              }
-            />
-            {meanA != null && Number.isFinite(meanA) && (
-              <ReferenceLine
-                y={meanA}
-                stroke={accent}
-                strokeDasharray="4 4"
-                strokeOpacity={0.55}
-                label={{
-                  value: 'Mean A',
-                  fill: muted,
-                  fontSize: 11,
-                  position: 'insideTopRight',
-                }}
-              />
+            {hasMeanA && (
+              <ReferenceLine y={meanA} stroke={phaseAColor} strokeDasharray="5 5" strokeOpacity={0.6} />
             )}
-            {meanB != null && Number.isFinite(meanB) && (
-              <ReferenceLine
-                y={meanB}
-                stroke={phaseBColor}
-                strokeDasharray="4 4"
-                strokeOpacity={0.55}
-                label={{
-                  value: 'Mean B',
-                  fill: muted,
-                  fontSize: 11,
-                  position: 'insideBottomRight',
-                }}
-              />
+            {hasMeanB && (
+              <ReferenceLine y={meanB} stroke={phaseBColor} strokeDasharray="5 5" strokeOpacity={0.6} />
             )}
             <Line
               type="monotone"
               dataKey="valueA"
               name="valueA"
-              stroke={accent}
+              stroke={phaseAColor}
               strokeWidth={2.5}
-              dot={{ r: 3.5, fill: accent }}
+              dot={{ r: 3.5, fill: '#fff', stroke: phaseAColor, strokeWidth: 2 }}
+              activeDot={{ r: 5.5 }}
               connectNulls={false}
-              isAnimationActive
             />
             <Line
               type="monotone"
@@ -185,9 +194,9 @@ export function MetricPhaseChart({
               name="valueB"
               stroke={phaseBColor}
               strokeWidth={2.5}
-              dot={{ r: 3.5, fill: phaseBColor }}
+              dot={{ r: 3.5, fill: '#fff', stroke: phaseBColor, strokeWidth: 2 }}
+              activeDot={{ r: 5.5 }}
               connectNulls={false}
-              isAnimationActive
             />
           </LineChart>
         </ResponsiveContainer>
