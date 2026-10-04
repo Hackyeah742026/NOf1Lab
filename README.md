@@ -16,7 +16,7 @@ NOf1Lab/
     tests/
       NOf1Lab.Domain.Tests/
   frontend/                # React + Vite + TypeScript + Tailwind
-  data/samples/            # synthetic CSVs (later)
+  data/samples/            # synthetic CSVs
   docs/
 ```
 
@@ -65,10 +65,3 @@ Working demo path:
 - Gemini explain with number validation + offline fallback
 - Frontend: Landing, Login, Dashboard, Templates, Active check-in, Result
 - Demo script: `docs/demo-script.md`
-
-## Demo login
-
-- Email: `demo@nof1lab.local`
-- Password: `Demo123!`
-
-Seeded data includes 5 templates and one completed earlier-bedtime experiment with a computed verdict.
