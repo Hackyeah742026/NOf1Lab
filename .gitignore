@@ -74,3 +74,7 @@ Thumbs.db
 *.db
 *.db-shm
 *.db-wal
+
+# Cursor IDE (local only)
+.cursor/
+
