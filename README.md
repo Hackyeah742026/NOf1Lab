@@ -46,14 +46,25 @@ npm run dev
 
 App: http://localhost:5173
 
+## Demo login
+
+- Email: `demo@nof1lab.local`
+- Password: `Demo123!`
+
+Seeded data includes 5 category templates and one completed earlier-bedtime experiment with a computed verdict.
+
+Optional: set `GEMINI_API_KEY` in a root `.env` for live AI explanations. Without it, `/explain` returns deterministic fallback copy that still cites the computed numbers.
+
 ## Current status
 
-Phase 0 skeleton:
+Working demo path:
 
-- Clean Architecture layers wired
-- Domain `Result` / `Error` + HTTP mapping
-- Minimal API endpoint groups (stubs) + `/health`
-- React app with Router, TanStack Query, Tailwind, API health check
+- JWT auth + SQLite persistence
+- Templates, experiment lifecycle, check-ins, CSV import, safety stop
+- Domain `ExperimentAnalyzer` (unit tested) + Keep/Drop/Modify/Inconclusive
+- Gemini explain with number validation + offline fallback
+- Frontend: Landing, Login, Dashboard, Templates, Active check-in, Result
+- Demo script: `docs/demo-script.md`
 
 ## Demo login
 

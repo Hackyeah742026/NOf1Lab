@@ -3,6 +3,15 @@ import { useNavigate } from 'react-router-dom'
 import { createExperiment, startExperiment } from '../api/experiments'
 import { fetchTemplates } from '../api/templates'
 import { AppShell } from '../components/AppShell'
+import { Disclaimer } from '../components/Disclaimer'
+
+const categoryCopy: Record<string, string> = {
+  sport: 'Training load & recovery',
+  physical: 'Physical health signals',
+  mental: 'Focus & mental wellbeing',
+  lifestyle: 'Everyday lifestyle decisions',
+  'physical+mental': 'Physical + mental energy',
+}
 
 export function TemplatesPage() {
   const navigate = useNavigate()
@@ -22,9 +31,14 @@ export function TemplatesPage() {
 
   return (
     <AppShell>
-      <h1 className="mb-2 text-4xl text-[var(--color-ink)]">Templates</h1>
-      <p className="mb-8 max-w-2xl text-[var(--color-muted)]">
-        Sport, physical health, mental wellbeing, and lifestyle decisions — pick one and start logging.
+      <h1 className="mb-2 text-4xl text-[var(--color-ink)]">Experiment templates</h1>
+      <p className="mb-3 max-w-2xl text-[var(--color-muted)]">
+        Built for sport, physical health, mental wellbeing, and lifestyle decisions — beyond
+        passive monitoring.
+      </p>
+      <p className="mb-8 max-w-2xl text-sm text-[var(--color-muted)]">
+        Tip: sign in as the demo user to open a precomputed earlier-bedtime result in under two
+        minutes.
       </p>
 
       {templates.isPending && <p className="text-[var(--color-muted)]">Loading templates…</p>}
@@ -34,10 +48,10 @@ export function TemplatesPage() {
         {templates.data?.map((template) => (
           <li
             key={template.key}
-            className="rounded-lg border border-emerald-900/10 bg-white/70 p-5"
+            className="rounded-2xl border border-emerald-900/10 bg-white/75 p-5 shadow-sm"
           >
             <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-[var(--color-muted)]">
-              {template.category}
+              {categoryCopy[template.category] ?? template.category}
             </p>
             <h2 className="mb-2 text-2xl text-[var(--color-ink)]">{template.title}</h2>
             <p className="mb-4 text-sm leading-relaxed text-[var(--color-muted)]">
@@ -57,6 +71,8 @@ export function TemplatesPage() {
           </li>
         ))}
       </ul>
+
+      <Disclaimer className="mt-10" />
     </AppShell>
   )
 }
