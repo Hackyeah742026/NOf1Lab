@@ -1,0 +1,19 @@
+# Compose build contexts are ./backend and ./frontend (their .dockerignore files apply).
+# This file is unused by docker-compose.yml; kept for accidental root-context builds.
+**/.git
+**/.vs
+**/.idea
+**/bin
+**/obj
+**/node_modules
+**/TestResults
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/.env
+**/.env.*
+!**/.env.example
+**/dist
+**/coverage
+*.md
+!README.md

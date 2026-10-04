@@ -24,6 +24,7 @@ NOf1Lab/
 
 - .NET 9 SDK
 - Node.js 20+
+- Docker Desktop (or Docker Engine + Compose) — only for containerized run
 
 ## Run backend
 
@@ -45,6 +46,33 @@ npm run dev
 ```
 
 App: http://localhost:5173
+
+## Run with Docker
+
+Requires Docker Desktop (or Docker Engine + Compose). Frontend image is built from `frontend/Dockerfile`.
+
+```bash
+docker compose up --build
+```
+
+Open the app at **http://localhost:8080** (Compose bakes `VITE_API_URL=http://localhost:5154` into the web image for browser calls to the published API).
+
+- App: http://localhost:8080
+- API: http://localhost:5154
+- Health: http://localhost:5154/health
+- Demo: `demo@nof1lab.local` / `Demo123!`
+
+Scalar / OpenAPI UI is only available when running the API locally with `dotnet run` (`ASPNETCORE_ENVIRONMENT=Development`). Compose sets Production, so Scalar is not served there.
+
+Optional: set `GEMINI_API_KEY` in a root `.env` (see `.env.example`) for live AI explanations. Without it, `/explain` uses deterministic fallback copy.
+
+SQLite persists in the `nof1lab-data` Docker volume (`Data Source=/data/nof1lab.db`). Demo seeds still run on API startup.
+
+Stop:
+
+```bash
+docker compose down
+```
 
 ## Demo login
 
