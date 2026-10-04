@@ -6,7 +6,8 @@ public sealed record AnalysisCheckIn(
     DateOnly Day,
     ExperimentPhase Phase,
     decimal MetricValue,
-    bool Adhered);
+    bool Adhered,
+    bool SafetyFlag = false);
 
 public sealed record AnalysisInput(
     IReadOnlyList<AnalysisCheckIn> CheckIns,

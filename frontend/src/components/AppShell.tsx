@@ -1,12 +1,13 @@
-import { Link, NavLink } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Button } from './Button'
+import { Logo } from './Logo'
 
 function navLinkClass(isActive: boolean) {
   return [
-    'rounded-full px-3.5 py-1.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]',
+    'flex-1 rounded-lg px-4 py-1.5 text-center text-sm font-semibold transition sm:flex-none focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]',
     isActive
-      ? 'bg-white text-[var(--color-accent)] shadow-sm ring-1 ring-emerald-900/10'
+      ? 'bg-white text-[var(--color-ink)] shadow-sm ring-1 ring-[var(--color-line)]'
       : 'text-[var(--color-muted)] hover:text-[var(--color-ink)]',
   ].join(' ')
 }
@@ -14,51 +15,42 @@ function navLinkClass(isActive: boolean) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, logout } = useAuth()
   const email = user?.email ?? ''
+  const initial = email.charAt(0).toUpperCase()
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-20 border-b border-emerald-900/10 bg-white/65 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:px-6">
-          <Link
-            to="/app"
-            className="font-display shrink-0 text-lg tracking-tight text-[var(--color-ink)] sm:text-xl"
-          >
-            N-of-1 Lab
-          </Link>
+      <header className="sticky top-0 z-30 border-b border-[var(--color-line)] bg-[var(--color-bg)]/80 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-4 py-3 sm:px-6">
+          <Logo to="/app" />
 
           <nav
             aria-label="App"
-            className="order-3 flex w-full items-center justify-center rounded-full bg-emerald-900/5 p-1 sm:order-none sm:w-auto sm:flex-1"
+            className="order-3 flex w-full rounded-xl bg-emerald-900/[0.06] p-1 sm:order-none sm:w-auto"
           >
-            <div className="flex w-full max-w-xs gap-1 sm:w-auto sm:max-w-none">
-              <NavLink to="/app" end className={({ isActive }) => `${navLinkClass(isActive)} flex-1 text-center sm:flex-none`}>
-                Dashboard
-              </NavLink>
-              <NavLink
-                to="/app/templates"
-                className={({ isActive }) => `${navLinkClass(isActive)} flex-1 text-center sm:flex-none`}
-              >
-                Templates
-              </NavLink>
-            </div>
+            <NavLink to="/app" end className={({ isActive }) => navLinkClass(isActive)}>
+              Dashboard
+            </NavLink>
+            <NavLink to="/app/templates" className={({ isActive }) => navLinkClass(isActive)}>
+              Templates
+            </NavLink>
           </nav>
 
-          <div className="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
+          <div className="ml-auto flex min-w-0 items-center gap-2">
             {email && (
-              <span
-                title={email}
-                className="hidden max-w-[10rem] truncate rounded-full bg-white/70 px-3 py-1.5 text-xs font-medium text-[var(--color-muted)] ring-1 ring-emerald-900/10 sm:inline-block md:max-w-[14rem]"
-              >
-                {email}
-              </span>
+              <div className="hidden min-w-0 items-center gap-2 sm:flex" title={email}>
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-soft)] text-sm font-bold text-[var(--color-accent)]">
+                  {initial}
+                </span>
+                <span className="max-w-[12rem] truncate text-sm text-[var(--color-muted)]">{email}</span>
+              </div>
             )}
-            <Button variant="ghost" onClick={logout} className="shrink-0 px-2.5 py-1.5 text-xs sm:text-sm">
+            <Button variant="ghost" onClick={logout} className="shrink-0">
               Sign out
             </Button>
           </div>
         </div>
       </header>
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">{children}</div>
+      <main className="mx-auto max-w-6xl px-4 pt-8 pb-16 sm:px-6 sm:pt-10">{children}</main>
     </div>
   )
 }

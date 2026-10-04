@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import type { ExperimentPhase } from '../api/types'
+import { formatDay } from '../lib/verdict'
 
 type PhaseProgressProps = {
   startDate?: string | null
@@ -41,11 +42,9 @@ export function PhaseProgress({
 
   if (!start || !phaseEnd || !finish) {
     return (
-      <div
-        className={`rounded-2xl border border-emerald-900/10 bg-white/70 px-5 py-4 ${className}`}
-      >
+      <div className={`card-muted px-5 py-4 ${className}`}>
         <p className="text-sm text-[var(--color-muted)]">
-          Protocol window appears after the experiment starts.
+          The protocol timeline appears once the experiment starts.
         </p>
       </div>
     )
@@ -53,52 +52,79 @@ export function PhaseProgress({
 
   const totalDays = Math.max(1, daysBetween(start, finish) + 1)
   const elapsedDays = Math.min(totalDays, Math.max(1, daysBetween(start, today) + 1))
-  const phaseADays = Math.max(1, daysBetween(start, phaseEnd) + 1)
+  const phaseADays = Math.min(totalDays, Math.max(1, daysBetween(start, phaseEnd) + 1))
+  const phaseBDays = totalDays - phaseADays
   const currentPhase: ExperimentPhase = today <= phaseEnd ? 'A' : 'B'
   const phaseLabel = currentPhase === 'A' ? phaseALabel : phaseBLabel
-  const progress = Math.min(100, Math.round((elapsedDays / totalDays) * 100))
-  const phaseAWidth = Math.min(100, Math.round((phaseADays / totalDays) * 100))
+  const fillA = Math.min(phaseADays, elapsedDays) / phaseADays
+  const fillB = phaseBDays > 0 ? Math.max(0, elapsedDays - phaseADays) / phaseBDays : 0
+  const daysLeft = totalDays - elapsedDays
 
   return (
-    <div
-      className={`rounded-2xl border border-emerald-900/10 bg-white/70 px-5 py-5 ${className}`}
-    >
-      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+    <div className={`card px-5 py-5 sm:px-6 ${className}`}>
+      <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-xs uppercase tracking-[0.16em] text-[var(--color-muted)]">
-            Protocol coach
-          </p>
-          <p className="mt-1 text-2xl text-[var(--color-ink)]">
+          <p className="eyebrow">Protocol timeline</p>
+          <p className="mt-1 font-display text-3xl text-[var(--color-ink)]">
             Day {elapsedDays}
-            <span className="text-base font-normal text-[var(--color-muted)]">
-              {' '}
-              of {totalDays}
-            </span>
+            <span className="font-body text-base font-normal text-[var(--color-muted)]"> of {totalDays}</span>
           </p>
         </div>
-        <span className="rounded-md bg-[var(--color-accent-soft)] px-3 py-1.5 text-sm font-semibold text-[var(--color-accent)]">
-          Phase {currentPhase}: {phaseLabel}
-        </span>
+        <div className="sm:text-right">
+          <span
+            className={[
+              'inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold',
+              currentPhase === 'A'
+                ? 'bg-[var(--color-accent-soft)] text-[var(--color-phase-a)]'
+                : 'bg-[var(--color-phase-b-soft)] text-[var(--color-phase-b)]',
+            ].join(' ')}
+          >
+            Now: {currentPhase} · {phaseLabel}
+          </span>
+          <p className="mt-1 text-xs text-[var(--color-subtle)]">
+            {daysLeft === 0 ? 'Final day — ready to compute' : `${daysLeft} day${daysLeft === 1 ? '' : 's'} left`}
+          </p>
+        </div>
       </div>
 
-      <div className="relative h-3 overflow-hidden rounded-full bg-emerald-900/10">
+      <div
+        className="flex gap-1.5"
+        role="progressbar"
+        aria-label="Protocol progress"
+        aria-valuemin={1}
+        aria-valuemax={totalDays}
+        aria-valuenow={elapsedDays}
+      >
         <div
-          className="absolute inset-y-0 left-0 bg-[var(--color-accent-soft)]"
-          style={{ width: `${phaseAWidth}%` }}
-          aria-hidden
-        />
-        <div
-          className="relative h-full rounded-full bg-[var(--color-accent)] transition-all duration-700"
-          style={{ width: `${progress}%` }}
-        />
+          className="h-3 overflow-hidden rounded-full bg-[var(--color-accent-soft)]"
+          style={{ flexGrow: phaseADays, flexBasis: 0 }}
+        >
+          <div
+            className="h-full rounded-full bg-[var(--color-phase-a)] transition-all duration-700"
+            style={{ width: `${fillA * 100}%` }}
+          />
+        </div>
+        {phaseBDays > 0 && (
+          <div
+            className="h-3 overflow-hidden rounded-full bg-[var(--color-phase-b-soft)]"
+            style={{ flexGrow: phaseBDays, flexBasis: 0 }}
+          >
+            <div
+              className="h-full rounded-full bg-[var(--color-phase-b)] transition-all duration-700"
+              style={{ width: `${fillB * 100}%` }}
+            />
+          </div>
+        )}
       </div>
 
       <div className="mt-3 flex flex-wrap justify-between gap-2 text-xs text-[var(--color-muted)]">
         <span>
-          A · {phaseALabel} through {phaseAEnd}
+          <strong className="text-[var(--color-phase-a)]">A</strong> · {phaseALabel} · until{' '}
+          {formatDay(phaseAEnd)}
         </span>
         <span>
-          B · {phaseBLabel} through {endDate}
+          <strong className="text-[var(--color-phase-b)]">B</strong> · {phaseBLabel} · until{' '}
+          {formatDay(endDate)}
         </span>
       </div>
     </div>
