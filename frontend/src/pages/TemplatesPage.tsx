@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { createExperiment, startExperiment } from '../api/experiments'
@@ -54,14 +54,29 @@ export function TemplatesPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [categoryFilter, setCategoryFilter] = useState<FilterKey>('all')
+  const [setupTemplate, setSetupTemplate] = useState<Template | null>(null)
+  const [hypothesis, setHypothesis] = useState('')
+
   const templates = useQuery({ queryKey: ['templates'], queryFn: fetchTemplates })
 
+  useEffect(() => {
+    if (!setupTemplate) return
+    setHypothesis(setupTemplate.question)
+  }, [setupTemplate])
+
   const start = useMutation({
-    mutationFn: async (templateKey: string) => {
-      const created = await createExperiment(templateKey)
+    mutationFn: async ({
+      templateKey,
+      hypothesis: hypothesisText,
+    }: {
+      templateKey: string
+      hypothesis: string
+    }) => {
+      const created = await createExperiment(templateKey, hypothesisText.trim() || undefined)
       return startExperiment(created.id)
     },
     onSuccess: async (experiment) => {
+      setSetupTemplate(null)
       await queryClient.invalidateQueries({ queryKey: ['experiments'] })
       navigate(`/app/experiments/${experiment.id}`)
     },
@@ -72,6 +87,20 @@ export function TemplatesPage() {
       (template) => categoryFilter === 'all' || template.category === categoryFilter,
     ),
   )
+
+  function closeSetup() {
+    if (start.isPending) return
+    setSetupTemplate(null)
+    setHypothesis('')
+  }
+
+  function confirmSetup() {
+    if (!setupTemplate) return
+    start.mutate({
+      templateKey: setupTemplate.key,
+      hypothesis,
+    })
+  }
 
   return (
     <AppShell>
@@ -157,17 +186,79 @@ export function TemplatesPage() {
               </p>
               <Button
                 disabled={start.isPending}
-                onClick={() => start.mutate(template.key)}
+                onClick={() => setSetupTemplate(template)}
                 className="w-full sm:w-auto"
               >
-                {start.isPending && start.variables === template.key
-                  ? 'Starting…'
-                  : 'Start experiment'}
+                Start experiment
               </Button>
             </li>
           )
         })}
       </ul>
+
+      {setupTemplate && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-emerald-950/35 p-4 sm:items-center"
+          role="presentation"
+          onClick={closeSetup}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="setup-wizard-title"
+            className="w-full max-w-lg rounded-2xl border border-emerald-900/10 bg-[var(--color-bg)] p-6 shadow-xl"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <p className="text-sm uppercase tracking-[0.16em] text-[var(--color-muted)]">
+              Setup wizard
+            </p>
+            <h2 id="setup-wizard-title" className="mt-2 text-3xl text-[var(--color-ink)]">
+              {setupTemplate.title}
+            </h2>
+            <p className="mt-3 font-body text-sm leading-relaxed text-[var(--color-muted)]">
+              {setupTemplate.question}
+            </p>
+
+            <dl className="mt-5 grid gap-3 rounded-xl border border-emerald-900/10 bg-white/70 px-4 py-3 text-sm sm:grid-cols-2">
+              <div>
+                <dt className="text-[var(--color-muted)]">Phase A</dt>
+                <dd className="font-semibold text-[var(--color-ink)]">{setupTemplate.phaseALabel}</dd>
+              </div>
+              <div>
+                <dt className="text-[var(--color-muted)]">Phase B</dt>
+                <dd className="font-semibold text-[var(--color-ink)]">{setupTemplate.phaseBLabel}</dd>
+              </div>
+              <div>
+                <dt className="text-[var(--color-muted)]">Days per phase</dt>
+                <dd className="font-semibold text-[var(--color-ink)]">{setupTemplate.daysPerPhase}</dd>
+              </div>
+              <div>
+                <dt className="text-[var(--color-muted)]">Metric</dt>
+                <dd className="font-semibold text-[var(--color-ink)]">{setupTemplate.metricLabel}</dd>
+              </div>
+            </dl>
+
+            <label className="mt-5 block text-sm">
+              <span className="mb-1 block text-[var(--color-muted)]">Your hypothesis</span>
+              <textarea
+                value={hypothesis}
+                onChange={(e) => setHypothesis(e.target.value)}
+                rows={3}
+                className="w-full rounded-md border border-emerald-900/15 bg-white px-3 py-2 font-body text-[var(--color-ink)]"
+              />
+            </label>
+
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Button disabled={start.isPending} onClick={confirmSetup}>
+                {start.isPending ? 'Starting…' : 'Confirm'}
+              </Button>
+              <Button variant="secondary" disabled={start.isPending} onClick={closeSetup}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Disclaimer className="mt-10" />
     </AppShell>

@@ -96,3 +96,11 @@ export type ExplainResponse = {
   evidenceKeys: string[]
   usedFallback: boolean
 }
+
+export type DemoShowcase = {
+  experimentId: string
+  templateKey: string
+  templateTitle: string
+  verdict: Verdict
+  status: ExperimentStatus
+}

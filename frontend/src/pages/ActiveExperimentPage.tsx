@@ -14,10 +14,13 @@ import {
 import { fetchTemplates } from '../api/templates'
 import { ApiError } from '../api/client'
 import { AppShell } from '../components/AppShell'
+import { Button, buttonClass } from '../components/Button'
 import { Disclaimer } from '../components/Disclaimer'
 import { MetricPhaseChart } from '../components/MetricPhaseChart'
 import { PhaseProgress } from '../components/PhaseProgress'
 import { StatGrid } from '../components/StatGrid'
+
+const SAMPLE_CSV_PATH = '/samples/earlier-bedtime-demo.csv'
 
 export function ActiveExperimentPage() {
   const { id = '' } = useParams()
@@ -139,6 +142,21 @@ export function ActiveExperimentPage() {
     stop.mutate(reason || undefined)
   }
 
+  async function loadSampleData() {
+    setError(null)
+    try {
+      const response = await fetch(SAMPLE_CSV_PATH)
+      if (!response.ok) {
+        throw new Error('Sample CSV not found.')
+      }
+      const blob = await response.blob()
+      const file = new File([blob], 'earlier-bedtime-demo.csv', { type: 'text/csv' })
+      importCsv.mutate(file)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not load sample data.')
+    }
+  }
+
   return (
     <AppShell>
       {experiment.isPending && <p className="text-[var(--color-muted)]">Loading experiment…</p>}
@@ -185,49 +203,27 @@ export function ActiveExperimentPage() {
 
           <div className="mb-6 flex flex-wrap gap-3">
             {data.status === 'Draft' && (
-              <button
-                type="button"
-                onClick={() => start.mutate()}
-                disabled={start.isPending}
-                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-              >
+              <Button onClick={() => start.mutate()} disabled={start.isPending}>
                 {start.isPending ? 'Starting…' : 'Start'}
-              </button>
+              </Button>
             )}
             {data.status === 'Active' && (
               <>
-                <button
-                  type="button"
-                  onClick={() => complete.mutate()}
-                  disabled={complete.isPending}
-                  className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-                >
+                <Button onClick={() => complete.mutate()} disabled={complete.isPending}>
                   {complete.isPending ? 'Completing…' : 'Complete & compute verdict'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowStopPrompt(true)}
-                  className="rounded-md bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-semibold"
-                >
+                </Button>
+                <Button variant="secondary" onClick={() => setShowStopPrompt(true)}>
                   Stop
-                </button>
+                </Button>
               </>
             )}
             {data.status === 'Stopped' && !data.result && (
-              <button
-                type="button"
-                onClick={() => complete.mutate()}
-                disabled={complete.isPending}
-                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-              >
+              <Button onClick={() => complete.mutate()} disabled={complete.isPending}>
                 {complete.isPending ? 'Completing…' : 'Complete & compute verdict'}
-              </button>
+              </Button>
             )}
             {data.result && (
-              <Link
-                to={`/app/experiments/${id}/result`}
-                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white"
-              >
+              <Link to={`/app/experiments/${id}/result`} className={buttonClass('primary')}>
                 View result
               </Link>
             )}
@@ -251,24 +247,22 @@ export function ActiveExperimentPage() {
                 />
               </label>
               <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
+                <Button
                   onClick={confirmStop}
                   disabled={stop.isPending}
-                  className="rounded-md bg-amber-800 px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                  className="bg-amber-800 hover:bg-amber-900"
                 >
                   {stop.isPending ? 'Stopping…' : 'Confirm stop'}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="secondary"
                   onClick={() => {
                     setShowStopPrompt(false)
                     setStopReason('')
                   }}
-                  className="rounded-md bg-white px-4 py-2 text-sm font-semibold text-amber-950"
                 >
                   Cancel
-                </button>
+                </Button>
               </div>
             </section>
           )}
@@ -404,21 +398,36 @@ export function ActiveExperimentPage() {
                   />
                 </label>
                 {error && <p className="mb-3 text-sm text-red-700">{error}</p>}
-                <button
+                <Button
                   type="submit"
                   disabled={addCheckIn.isPending || data.status !== 'Active'}
-                  className="rounded-md bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+                  className="px-5 py-3"
                 >
                   Save check-in
-                </button>
+                </Button>
               </form>
 
               <div className="rounded-2xl border border-emerald-900/10 bg-white/70 p-6">
                 <h2 className="mb-2 text-2xl">Import CSV</h2>
                 <p className="mb-4 text-sm leading-relaxed text-[var(--color-muted)]">
-                  Fast path for demos: upload synthetic phase A/B rows from{' '}
-                  <code>data/samples/earlier-bedtime-demo.csv</code>.
+                  Fast path for demos: load the earlier-bedtime sample, or upload your own phase A/B
+                  CSV.
                 </p>
+                <div className="mb-4 flex flex-wrap items-center gap-3">
+                  <Button
+                    disabled={importCsv.isPending || data.status !== 'Active'}
+                    onClick={() => void loadSampleData()}
+                  >
+                    {importCsv.isPending ? 'Loading…' : 'Load sample data'}
+                  </Button>
+                  <a
+                    href={SAMPLE_CSV_PATH}
+                    download="earlier-bedtime-demo.csv"
+                    className="text-sm font-semibold text-[var(--color-accent)] hover:underline"
+                  >
+                    Download sample CSV
+                  </a>
+                </div>
                 <input
                   type="file"
                   accept=".csv,text/csv"

@@ -1,8 +1,12 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { ApiError } from '../api/client'
+import { fetchShowcase } from '../api/demo'
 import { fetchExperiments } from '../api/experiments'
 import type { Experiment, ExperimentStatus } from '../api/types'
 import { AppShell } from '../components/AppShell'
+import { Button, buttonClass } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
 
 const groups: { status: ExperimentStatus; title: string; hint: string }[] = [
@@ -49,6 +53,10 @@ function ExperimentRow({ experiment }: { experiment: Experiment }) {
 }
 
 export function DashboardPage() {
+  const navigate = useNavigate()
+  const [demoBusy, setDemoBusy] = useState(false)
+  const [demoError, setDemoError] = useState<string | null>(null)
+
   const experiments = useQuery({
     queryKey: ['experiments'],
     queryFn: fetchExperiments,
@@ -60,6 +68,21 @@ export function DashboardPage() {
   const firstActive = active[0]
   const hasAny = list.length > 0
 
+  async function openDemoResult() {
+    setDemoBusy(true)
+    setDemoError(null)
+    try {
+      const showcase = await fetchShowcase()
+      navigate(`/app/experiments/${showcase.experimentId}/result`, {
+        state: { fromShowcase: true },
+      })
+    } catch (err) {
+      setDemoError(err instanceof ApiError ? err.message : 'Could not open demo result.')
+    } finally {
+      setDemoBusy(false)
+    }
+  }
+
   return (
     <AppShell>
       <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
@@ -70,26 +93,24 @@ export function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
+          <Button variant="secondary" disabled={demoBusy} onClick={() => void openDemoResult()}>
+            {demoBusy ? 'Opening…' : 'Open demo result'}
+          </Button>
           {firstActive && (
-            <Link
-              to={`/app/experiments/${firstActive.id}`}
-              className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white"
-            >
+            <Link to={`/app/experiments/${firstActive.id}`} className={buttonClass('primary')}>
               Continue
             </Link>
           )}
           <Link
             to="/app/templates"
-            className={`rounded-md px-4 py-2 text-sm font-semibold ${
-              firstActive
-                ? 'bg-[var(--color-accent-soft)] text-[var(--color-ink)]'
-                : 'bg-[var(--color-accent)] text-white'
-            }`}
+            className={buttonClass(firstActive ? 'secondary' : 'primary')}
           >
             New experiment
           </Link>
         </div>
       </div>
+
+      {demoError && <p className="mb-4 text-sm text-red-700">{demoError}</p>}
 
       {experiments.isPending && <p className="text-[var(--color-muted)]">Loading experiments…</p>}
       {experiments.isError && <p className="text-red-700">Could not load experiments.</p>}
@@ -99,10 +120,7 @@ export function DashboardPage() {
           title="No experiments yet"
           message="Pick a template to start your first A/B self-experiment. The demo account also has a seeded result ready to open."
           action={
-            <Link
-              to="/app/templates"
-              className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white"
-            >
+            <Link to="/app/templates" className={buttonClass('primary')}>
               Browse templates
             </Link>
           }

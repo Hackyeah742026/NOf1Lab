@@ -1,7 +1,12 @@
-import { Link } from 'react-router-dom'
-import { Disclaimer } from '../components/Disclaimer'
-import { buttonClass } from '../components/Button'
+import { useState } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { ApiError } from '../api/client'
+import { fetchShowcase } from '../api/demo'
+import type { CheckIn } from '../api/types'
 import { useAuth } from '../auth/AuthContext'
+import { Button, buttonClass } from '../components/Button'
+import { Disclaimer } from '../components/Disclaimer'
+import { MetricPhaseChart } from '../components/MetricPhaseChart'
 
 const features = [
   {
@@ -22,8 +27,42 @@ const features = [
   },
 ] as const
 
+const previewCheckIns: CheckIn[] = [
+  { id: 'p1', day: '2026-09-01', phase: 'A', metricValue: 5, adhered: true, safetyFlag: false },
+  { id: 'p2', day: '2026-09-02', phase: 'A', metricValue: 5.5, adhered: true, safetyFlag: false },
+  { id: 'p3', day: '2026-09-03', phase: 'A', metricValue: 4.5, adhered: true, safetyFlag: false },
+  { id: 'p4', day: '2026-09-04', phase: 'A', metricValue: 5, adhered: true, safetyFlag: false },
+  { id: 'p5', day: '2026-09-05', phase: 'A', metricValue: 6, adhered: true, safetyFlag: false },
+  { id: 'p6', day: '2026-09-06', phase: 'B', metricValue: 7, adhered: true, safetyFlag: false },
+  { id: 'p7', day: '2026-09-07', phase: 'B', metricValue: 7.5, adhered: true, safetyFlag: false },
+  { id: 'p8', day: '2026-09-08', phase: 'B', metricValue: 6.5, adhered: true, safetyFlag: false },
+  { id: 'p9', day: '2026-09-09', phase: 'B', metricValue: 8, adhered: true, safetyFlag: false },
+  { id: 'p10', day: '2026-09-10', phase: 'B', metricValue: 7, adhered: true, safetyFlag: false },
+]
+
 export function LandingPage() {
-  const { user } = useAuth()
+  const { user, login } = useAuth()
+  const navigate = useNavigate()
+  const [demoBusy, setDemoBusy] = useState(false)
+  const [demoError, setDemoError] = useState<string | null>(null)
+
+  async function openDemoResult() {
+    setDemoBusy(true)
+    setDemoError(null)
+    try {
+      if (!user) {
+        await login('demo@nof1lab.local', 'Demo123!')
+      }
+      const showcase = await fetchShowcase()
+      navigate(`/app/experiments/${showcase.experimentId}/result`, {
+        state: { fromShowcase: true },
+      })
+    } catch (err) {
+      setDemoError(err instanceof ApiError ? err.message : 'Could not open demo result.')
+    } finally {
+      setDemoBusy(false)
+    }
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -63,9 +102,65 @@ export function LandingPage() {
           >
             {user ? 'Browse templates' : 'Sign in to browse'}
           </Link>
+          <Button
+            variant="ghost"
+            className="px-7 py-3 text-base"
+            disabled={demoBusy}
+            onClick={() => void openDemoResult()}
+          >
+            {demoBusy ? 'Opening…' : 'Open demo result'}
+          </Button>
         </div>
 
+        {demoError && <p className="mb-4 text-sm text-red-700">{demoError}</p>}
+
         <Disclaimer className="animate-rise-late max-w-xl" />
+      </section>
+
+      <section className="relative border-t border-emerald-900/10 bg-white/35 backdrop-blur-sm">
+        <div className="mx-auto max-w-5xl px-6 py-14">
+          <div className="mb-6 max-w-xl">
+            <p className="mb-2 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-accent)]">
+              Product preview
+            </p>
+            <h2 className="text-3xl text-[var(--color-ink)] md:text-4xl">
+              A calm Keep / Drop / Modify call from your own A/B run
+            </h2>
+            <p className="mt-3 text-[var(--color-muted)]">
+              Example earlier-bedtime series — illustrative sample, not live account data.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-stretch">
+            <div className="flex flex-col justify-between rounded-2xl border border-emerald-900/10 bg-[var(--color-panel)] p-6 shadow-sm md:p-8">
+              <div>
+                <p className="text-sm uppercase tracking-[0.16em] text-[var(--color-muted)]">
+                  Verdict preview
+                </p>
+                <span className="mt-4 inline-flex items-center rounded-full bg-[var(--color-accent-soft)] px-3 py-1 text-sm font-bold uppercase tracking-wide text-[var(--color-accent)]">
+                  Keep
+                </span>
+                <p className="mt-5 text-4xl text-[var(--color-ink)] md:text-5xl">Earlier bedtime</p>
+                <p className="mt-3 max-w-sm text-sm leading-relaxed text-[var(--color-muted)]">
+                  Phase B energy rose versus baseline. Stats engine suggests keeping the habit —
+                  AI can narrate the numbers, never invent them.
+                </p>
+              </div>
+              <div className="mt-8 h-2 overflow-hidden rounded-full bg-emerald-900/10">
+                <div className="h-full w-[62%] rounded-full bg-[var(--color-accent)]" />
+              </div>
+            </div>
+
+            <MetricPhaseChart
+              checkIns={previewCheckIns}
+              metricLabel="Energy (1–10)"
+              phaseALabel="Usual bedtime"
+              phaseBLabel="Earlier bedtime"
+              meanA={5.2}
+              meanB={7.2}
+            />
+          </div>
+        </div>
       </section>
 
       <section className="relative border-t border-emerald-900/10 bg-white/40 backdrop-blur-sm">

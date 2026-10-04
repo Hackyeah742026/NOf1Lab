@@ -1,0 +1,11 @@
+day,phase,metric,adhered,notes,safety
+2026-09-01,A,5.0,true,Baseline,false
+2026-09-02,A,5.5,true,Baseline,false
+2026-09-03,A,4.5,true,Baseline,false
+2026-09-04,A,5.0,true,Baseline,false
+2026-09-05,A,6.0,true,Baseline,false
+2026-09-06,B,7.0,true,Earlier bedtime,false
+2026-09-07,B,7.5,true,Earlier bedtime,false
+2026-09-08,B,6.5,true,Earlier bedtime,false
+2026-09-09,B,8.0,true,Earlier bedtime,false
+2026-09-10,B,7.0,true,Earlier bedtime,false

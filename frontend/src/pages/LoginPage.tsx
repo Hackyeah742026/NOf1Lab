@@ -1,18 +1,47 @@
-import { useState, type FormEvent } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { useEffect, useState, type FormEvent } from 'react'
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError } from '../api/client'
+import { fetchShowcase } from '../api/demo'
 import { useAuth } from '../auth/AuthContext'
+import { Button } from '../components/Button'
 import { Disclaimer } from '../components/Disclaimer'
 
+const DEMO_EMAIL = 'demo@nof1lab.local'
+const DEMO_PASSWORD = 'Demo123!'
+
 export function LoginPage() {
-  const { user, login, register } = useAuth()
+  const { user, loading, login, register } = useAuth()
   const navigate = useNavigate()
-  const [email, setEmail] = useState('demo@nof1lab.local')
-  const [password, setPassword] = useState('Demo123!')
+  const [searchParams] = useSearchParams()
+  const continueDemoResult = searchParams.get('continue') === 'demo-result'
+  const [email, setEmail] = useState(DEMO_EMAIL)
+  const [password, setPassword] = useState(DEMO_PASSWORD)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
-  if (user) {
+  useEffect(() => {
+    if (loading || !user || !continueDemoResult) return
+    let cancelled = false
+    setBusy(true)
+    fetchShowcase()
+      .then((showcase) => {
+        if (cancelled) return
+        navigate(`/app/experiments/${showcase.experimentId}/result`, {
+          replace: true,
+          state: { fromShowcase: true },
+        })
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return
+        setError(err instanceof ApiError ? err.message : 'Could not open demo result.')
+        setBusy(false)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [loading, user, continueDemoResult, navigate])
+
+  if (user && !continueDemoResult) {
     return <Navigate to="/app" replace />
   }
 
@@ -26,10 +55,26 @@ export function LoginPage() {
       } else {
         await register(email, password)
       }
-      navigate('/app')
+      if (!continueDemoResult) {
+        navigate('/app')
+      }
+      // With continue=demo-result, the effect above opens the showcase result.
     } catch (err) {
       setError(err instanceof ApiError ? err.message : 'Authentication failed.')
-    } finally {
+      setBusy(false)
+    }
+  }
+
+  async function continueAsDemo() {
+    setBusy(true)
+    setError(null)
+    try {
+      await login(DEMO_EMAIL, DEMO_PASSWORD)
+      if (!continueDemoResult) {
+        navigate('/app')
+      }
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Demo sign-in failed.')
       setBusy(false)
     }
   }
@@ -40,6 +85,14 @@ export function LoginPage() {
       <p className="mb-8 text-[var(--color-muted)]">
         Use the seeded demo account or register a new one.
       </p>
+
+      <Button
+        className="mb-8 w-full py-3 text-base"
+        disabled={busy}
+        onClick={() => void continueAsDemo()}
+      >
+        {busy ? 'Continuing…' : 'Continue as demo'}
+      </Button>
 
       <form className="space-y-4" onSubmit={(e) => void submit('login', e)}>
         <label className="block text-sm">
@@ -66,26 +119,22 @@ export function LoginPage() {
         {error && <p className="text-sm text-red-700">{error}</p>}
 
         <div className="flex flex-wrap gap-3 pt-2">
-          <button
-            type="submit"
-            disabled={busy}
-            className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
-          >
+          <Button type="submit" disabled={busy}>
             Sign in
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="secondary"
             disabled={busy}
             onClick={(e) => void submit('register', e)}
-            className="rounded-md bg-[var(--color-accent-soft)] px-4 py-2 text-sm font-semibold text-[var(--color-ink)] disabled:opacity-60"
           >
             Register
-          </button>
+          </Button>
         </div>
       </form>
 
       <p className="mt-6 text-sm text-[var(--color-muted)]">
-        Demo: <code>demo@nof1lab.local</code> / <code>Demo123!</code>
+        Demo: <code>{DEMO_EMAIL}</code> / <code>{DEMO_PASSWORD}</code>
       </p>
       <Link to="/" className="mt-4 text-sm font-semibold text-[var(--color-accent)] hover:underline">
         Back to landing

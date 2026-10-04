@@ -1,19 +1,33 @@
-import { useMutation, useQuery } from '@tanstack/react-query'
-import { Link, useParams } from 'react-router-dom'
+import { useEffect, useRef } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useLocation, useNavigate, useParams } from 'react-router-dom'
+import { ApiError } from '../api/client'
 import {
+  createExperiment,
   explainExperiment,
   fetchCheckIns,
   fetchExperiment,
   fetchResult,
+  startExperiment,
 } from '../api/experiments'
 import { fetchTemplates } from '../api/templates'
 import { AppShell } from '../components/AppShell'
+import { Button, buttonClass } from '../components/Button'
 import { Disclaimer } from '../components/Disclaimer'
 import { MetricPhaseChart } from '../components/MetricPhaseChart'
 import { StatGrid } from '../components/StatGrid'
 
+type ResultLocationState = {
+  fromShowcase?: boolean
+}
+
 export function ResultPage() {
   const { id = '' } = useParams()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const queryClient = useQueryClient()
+  const fromShowcase = Boolean((location.state as ResultLocationState | null)?.fromShowcase)
+  const autoExplainAttempted = useRef(false)
 
   const experiment = useQuery({
     queryKey: ['experiment', id],
@@ -43,11 +57,38 @@ export function ResultPage() {
     mutationFn: () => explainExperiment(id),
   })
 
+  const startNext = useMutation({
+    mutationFn: async (templateKey: string) => {
+      const created = await createExperiment(templateKey)
+      return startExperiment(created.id)
+    },
+    onSuccess: async (created) => {
+      await queryClient.invalidateQueries({ queryKey: ['experiments'] })
+      navigate(`/app/experiments/${created.id}`)
+    },
+  })
+
   const data = result.data ?? experiment.data?.result
   const template = templates.data?.find((item) => item.key === experiment.data?.templateKey)
   const metricLabel = template?.metricLabel ?? 'Metric'
   const phaseALabel = template?.phaseALabel ?? 'Phase A'
   const phaseBLabel = template?.phaseBLabel ?? 'Phase B'
+  const suggestedKey = explain.data?.suggestedNextTemplateKey ?? null
+  const suggestedTemplate = suggestedKey
+    ? templates.data?.find((item) => item.key === suggestedKey)
+    : undefined
+  const suggestedTitle = suggestedTemplate?.title ?? suggestedKey
+  const shouldAutoExplain =
+    Boolean(data) &&
+    (experiment.data?.templateKey === 'earlier-bedtime' || fromShowcase)
+
+  useEffect(() => {
+    if (!shouldAutoExplain || autoExplainAttempted.current) return
+    autoExplainAttempted.current = true
+    explain.mutate()
+    // Intentionally once per result view when demo/showcase conditions match.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- useRef guard; mutate identity not required
+  }, [shouldAutoExplain])
 
   return (
     <AppShell>
@@ -116,14 +157,12 @@ export function ResultPage() {
                   Optional AI narration with offline fallback if Gemini is unavailable.
                 </p>
               </div>
-              <button
-                type="button"
+              <Button
                 onClick={() => explain.mutate()}
                 disabled={explain.isPending}
-                className="rounded-md bg-[var(--color-accent)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {explain.isPending ? 'Explaining…' : 'Explain my result'}
-              </button>
+              </Button>
             </div>
             {explain.data && (
               <>
@@ -132,13 +171,22 @@ export function ResultPage() {
                   Evidence keys: {explain.data.evidenceKeys.join(', ')}
                   {explain.data.usedFallback ? ' · offline fallback' : ''}
                 </p>
-                {explain.data.suggestedNextTemplateKey && (
-                  <Link
-                    to="/app/templates"
-                    className="mt-4 inline-block text-sm font-semibold text-[var(--color-accent)] hover:underline"
-                  >
-                    Suggested next: {explain.data.suggestedNextTemplateKey}
-                  </Link>
+                {suggestedKey && suggestedTitle && (
+                  <div className="mt-5">
+                    <Button
+                      disabled={startNext.isPending}
+                      onClick={() => startNext.mutate(suggestedKey)}
+                    >
+                      {startNext.isPending ? 'Starting…' : `Start: ${suggestedTitle}`}
+                    </Button>
+                    {startNext.isError && (
+                      <p className="mt-2 text-sm text-red-700">
+                        {startNext.error instanceof ApiError
+                          ? startNext.error.message
+                          : 'Could not start next experiment.'}
+                      </p>
+                    )}
+                  </div>
                 )}
               </>
             )}
@@ -148,16 +196,10 @@ export function ResultPage() {
           </section>
 
           <div className="mb-8 flex flex-wrap gap-3">
-            <Link
-              to="/app/templates"
-              className="rounded-md bg-[var(--color-accent)] px-5 py-3 text-sm font-semibold text-white"
-            >
+            <Link to="/app/templates" className={buttonClass('primary', 'px-5 py-3')}>
               Start next experiment
             </Link>
-            <Link
-              to="/app"
-              className="rounded-md bg-[var(--color-accent-soft)] px-5 py-3 text-sm font-semibold"
-            >
+            <Link to="/app" className={buttonClass('secondary', 'px-5 py-3')}>
               Dashboard
             </Link>
           </div>
