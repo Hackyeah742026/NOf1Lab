@@ -5,9 +5,11 @@ import { ApiError } from '../api/client'
 import { fetchShowcase } from '../api/demo'
 import { fetchExperiments } from '../api/experiments'
 import type { Experiment, ExperimentStatus } from '../api/types'
+import { useAuth } from '../auth/AuthContext'
 import { AppShell } from '../components/AppShell'
 import { Button, buttonClass } from '../components/Button'
 import { EmptyState } from '../components/EmptyState'
+import { DEMO_EMAIL, DEMO_PASSWORD } from '../lib/demoAccount'
 
 const groups: { status: ExperimentStatus; title: string; hint: string }[] = [
   { status: 'Active', title: 'Active', hint: 'In progress — keep logging check-ins.' },
@@ -53,6 +55,7 @@ function ExperimentRow({ experiment }: { experiment: Experiment }) {
 }
 
 export function DashboardPage() {
+  const { user, login } = useAuth()
   const navigate = useNavigate()
   const [demoBusy, setDemoBusy] = useState(false)
   const [demoError, setDemoError] = useState<string | null>(null)
@@ -72,6 +75,10 @@ export function DashboardPage() {
     setDemoBusy(true)
     setDemoError(null)
     try {
+      // Hop to demo when needed so showcase is available even if another user is signed in.
+      if (user?.email !== DEMO_EMAIL) {
+        await login(DEMO_EMAIL, DEMO_PASSWORD)
+      }
       const showcase = await fetchShowcase()
       navigate(`/app/experiments/${showcase.experimentId}/result`, {
         state: { fromShowcase: true },

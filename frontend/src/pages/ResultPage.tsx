@@ -78,15 +78,13 @@ export function ResultPage() {
     ? templates.data?.find((item) => item.key === suggestedKey)
     : undefined
   const suggestedTitle = suggestedTemplate?.title ?? suggestedKey
-  const shouldAutoExplain =
-    Boolean(data) &&
-    (experiment.data?.templateKey === 'earlier-bedtime' || fromShowcase)
+  const shouldAutoExplain = Boolean(data) && fromShowcase
 
   useEffect(() => {
     if (!shouldAutoExplain || autoExplainAttempted.current) return
     autoExplainAttempted.current = true
     explain.mutate()
-    // Intentionally once per result view when demo/showcase conditions match.
+    // Intentionally once per result view when opened from the showcase / demo hop.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- useRef guard; mutate identity not required
   }, [shouldAutoExplain])
 

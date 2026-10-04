@@ -410,12 +410,15 @@ export function ActiveExperimentPage() {
               <div className="rounded-2xl border border-emerald-900/10 bg-white/70 p-6">
                 <h2 className="mb-2 text-2xl">Import CSV</h2>
                 <p className="mb-4 text-sm leading-relaxed text-[var(--color-muted)]">
-                  Fast path for demos: load the earlier-bedtime sample, or upload your own phase A/B
-                  CSV.
+                  Fast path for demos: load the earlier-bedtime sample CSV (narrative demo data), or
+                  upload your own phase A/B file. Available while the experiment is Draft or Active.
                 </p>
                 <div className="mb-4 flex flex-wrap items-center gap-3">
                   <Button
-                    disabled={importCsv.isPending || data.status !== 'Active'}
+                    disabled={
+                      importCsv.isPending ||
+                      (data.status !== 'Active' && data.status !== 'Draft')
+                    }
                     onClick={() => void loadSampleData()}
                   >
                     {importCsv.isPending ? 'Loading…' : 'Load sample data'}
@@ -431,6 +434,10 @@ export function ActiveExperimentPage() {
                 <input
                   type="file"
                   accept=".csv,text/csv"
+                  disabled={
+                    importCsv.isPending ||
+                    (data.status !== 'Active' && data.status !== 'Draft')
+                  }
                   onChange={(e) => {
                     const file = e.target.files?.[0]
                     if (file) {

@@ -7,6 +7,7 @@ import { useAuth } from '../auth/AuthContext'
 import { Button, buttonClass } from '../components/Button'
 import { Disclaimer } from '../components/Disclaimer'
 import { MetricPhaseChart } from '../components/MetricPhaseChart'
+import { DEMO_EMAIL, DEMO_PASSWORD } from '../lib/demoAccount'
 
 const features = [
   {
@@ -50,8 +51,9 @@ export function LandingPage() {
     setDemoBusy(true)
     setDemoError(null)
     try {
-      if (!user) {
-        await login('demo@nof1lab.local', 'Demo123!')
+      // Hop to demo when needed so showcase is available even if another user is signed in.
+      if (user?.email !== DEMO_EMAIL) {
+        await login(DEMO_EMAIL, DEMO_PASSWORD)
       }
       const showcase = await fetchShowcase()
       navigate(`/app/experiments/${showcase.experimentId}/result`, {

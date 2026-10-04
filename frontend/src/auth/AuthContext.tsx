@@ -1,3 +1,4 @@
+import { useQueryClient } from '@tanstack/react-query'
 import {
   createContext,
   useContext,
@@ -21,6 +22,7 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const queryClient = useQueryClient()
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -45,18 +47,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const response = await loginRequest(email, password)
         setToken(response.token)
         setUser(response.user)
+        // Drop prior-user queries so lists/details cannot flash after account switch.
+        queryClient.clear()
       },
       async register(email, password) {
         const response = await registerRequest(email, password)
         setToken(response.token)
         setUser(response.user)
+        queryClient.clear()
       },
       logout() {
         setToken(null)
         setUser(null)
+        queryClient.clear()
       },
     }),
-    [user, loading],
+    [user, loading, queryClient],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

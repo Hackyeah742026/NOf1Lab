@@ -5,9 +5,7 @@ import { fetchShowcase } from '../api/demo'
 import { useAuth } from '../auth/AuthContext'
 import { Button } from '../components/Button'
 import { Disclaimer } from '../components/Disclaimer'
-
-const DEMO_EMAIL = 'demo@nof1lab.local'
-const DEMO_PASSWORD = 'Demo123!'
+import { DEMO_EMAIL, DEMO_PASSWORD } from '../lib/demoAccount'
 
 export function LoginPage() {
   const { user, loading, login, register } = useAuth()
@@ -20,26 +18,35 @@ export function LoginPage() {
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (loading || !user || !continueDemoResult) return
+    if (loading || !continueDemoResult) return
     let cancelled = false
     setBusy(true)
-    fetchShowcase()
-      .then((showcase) => {
+
+    async function openShowcaseResult() {
+      try {
+        // Deep link: ensure demo account before showcase (even if another user was signed in).
+        if (!user || user.email !== DEMO_EMAIL) {
+          await login(DEMO_EMAIL, DEMO_PASSWORD)
+        }
+        if (cancelled) return
+        const showcase = await fetchShowcase()
         if (cancelled) return
         navigate(`/app/experiments/${showcase.experimentId}/result`, {
           replace: true,
           state: { fromShowcase: true },
         })
-      })
-      .catch((err: unknown) => {
+      } catch (err: unknown) {
         if (cancelled) return
         setError(err instanceof ApiError ? err.message : 'Could not open demo result.')
         setBusy(false)
-      })
+      }
+    }
+
+    void openShowcaseResult()
     return () => {
       cancelled = true
     }
-  }, [loading, user, continueDemoResult, navigate])
+  }, [loading, user, continueDemoResult, login, navigate])
 
   if (user && !continueDemoResult) {
     return <Navigate to="/app" replace />
