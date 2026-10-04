@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using NOf1Lab.Application.Services;
 
 namespace NOf1Lab.Application.DependencyInjection;
 
@@ -6,7 +7,9 @@ public static class ApplicationServiceCollectionExtensions
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        // Use-case handlers and validators will be registered here.
+        services.AddScoped<AuthService>();
+        services.AddScoped<TemplateService>();
+        services.AddScoped<ExperimentService>();
         return services;
     }
 }

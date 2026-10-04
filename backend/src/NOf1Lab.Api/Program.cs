@@ -1,10 +1,16 @@
+using System.Text.Json.Serialization;
 using NOf1Lab.Api.Endpoints;
 using NOf1Lab.Application.DependencyInjection;
 using NOf1Lab.Infrastructure.DependencyInjection;
+using NOf1Lab.Infrastructure.Persistence;
 using Scalar.AspNetCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.Converters.Add(new JsonStringEnumConverter());
+});
 builder.Services.AddOpenApi();
 builder.Services.AddCors(options =>
 {
@@ -15,9 +21,11 @@ builder.Services.AddCors(options =>
 });
 
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var app = builder.Build();
+
+await DbSeeder.SeedAsync(app.Services);
 
 if (app.Environment.IsDevelopment())
 {
@@ -26,6 +34,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseHttpsRedirection();
 
 app.MapHealthEndpoints();
