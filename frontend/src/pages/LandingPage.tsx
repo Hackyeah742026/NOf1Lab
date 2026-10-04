@@ -61,7 +61,7 @@ export function LandingPage() {
             to={user ? '/app/templates' : '/login'}
             className={buttonClass('secondary', 'px-7 py-3 text-base')}
           >
-            Browse templates
+            {user ? 'Browse templates' : 'Sign in to browse'}
           </Link>
         </div>
 

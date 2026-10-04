@@ -1,7 +1,9 @@
+import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { createExperiment, startExperiment } from '../api/experiments'
 import { fetchTemplates } from '../api/templates'
+import type { Template } from '../api/types'
 import { AppShell } from '../components/AppShell'
 import { Button } from '../components/Button'
 import { Disclaimer } from '../components/Disclaimer'
@@ -22,9 +24,36 @@ const categoryHint: Record<string, string> = {
   'physical+mental': 'Physical + mental energy',
 }
 
+const filterCategories = [
+  { key: 'all', label: 'All' },
+  { key: 'sport', label: 'Sport' },
+  { key: 'physical', label: 'Body' },
+  { key: 'mental', label: 'Mind' },
+  { key: 'lifestyle', label: 'Lifestyle' },
+  { key: 'physical+mental', label: 'Body + Mind' },
+] as const
+
+type FilterKey = (typeof filterCategories)[number]['key']
+
+const featuredKeys = ['earlier-bedtime', 'morning-light', 'training-load'] as const
+
+function featuredRank(key: string) {
+  const index = featuredKeys.indexOf(key as (typeof featuredKeys)[number])
+  return index === -1 ? featuredKeys.length : index
+}
+
+function sortTemplates(templates: Template[]) {
+  return [...templates].sort((a, b) => {
+    const rankDiff = featuredRank(a.key) - featuredRank(b.key)
+    if (rankDiff !== 0) return rankDiff
+    return a.title.localeCompare(b.title)
+  })
+}
+
 export function TemplatesPage() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const [categoryFilter, setCategoryFilter] = useState<FilterKey>('all')
   const templates = useQuery({ queryKey: ['templates'], queryFn: fetchTemplates })
 
   const start = useMutation({
@@ -38,17 +67,51 @@ export function TemplatesPage() {
     },
   })
 
+  const visibleTemplates = sortTemplates(
+    (templates.data ?? []).filter(
+      (template) => categoryFilter === 'all' || template.category === categoryFilter,
+    ),
+  )
+
   return (
     <AppShell>
-      <h1 className="mb-2 text-4xl text-[var(--color-ink)]">Experiment templates</h1>
+      <h1 className="mb-2 font-body text-4xl font-semibold tracking-tight text-[var(--color-ink)]">
+        Experiment templates
+      </h1>
       <p className="mb-3 max-w-2xl font-body text-[var(--color-muted)]">
         Built for sport, physical health, mental wellbeing, and lifestyle decisions — beyond
         passive monitoring.
       </p>
-      <p className="mb-8 max-w-2xl font-body text-sm text-[var(--color-muted)]">
+      <p className="mb-6 max-w-2xl font-body text-sm text-[var(--color-muted)]">
         Tip: sign in as the demo user to open a precomputed earlier-bedtime result in under two
         minutes.
       </p>
+
+      <div
+        role="group"
+        aria-label="Filter by category"
+        className="mb-8 flex flex-wrap gap-2"
+      >
+        {filterCategories.map((category) => {
+          const selected = categoryFilter === category.key
+          return (
+            <button
+              key={category.key}
+              type="button"
+              aria-pressed={selected}
+              onClick={() => setCategoryFilter(category.key)}
+              className={[
+                'rounded-full px-3.5 py-1.5 font-body text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]',
+                selected
+                  ? 'bg-[var(--color-accent)] text-white shadow-sm'
+                  : 'bg-white/70 text-[var(--color-muted)] ring-1 ring-emerald-900/10 hover:text-[var(--color-ink)]',
+              ].join(' ')}
+            >
+              {category.label}
+            </button>
+          )
+        })}
+      </div>
 
       {templates.isPending && <p className="font-body text-[var(--color-muted)]">Loading templates…</p>}
       {templates.isError && (
@@ -60,8 +123,12 @@ export function TemplatesPage() {
         <p className="font-body text-[var(--color-muted)]">No templates available yet.</p>
       )}
 
+      {!templates.isPending && templates.data && templates.data.length > 0 && visibleTemplates.length === 0 && (
+        <p className="font-body text-[var(--color-muted)]">No templates in this category.</p>
+      )}
+
       <ul className="grid gap-4 md:grid-cols-2">
-        {templates.data?.map((template) => {
+        {visibleTemplates.map((template) => {
           const chip = categoryCopy[template.category] ?? template.category
           const hint = categoryHint[template.category]
 

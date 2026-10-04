@@ -8,13 +8,29 @@ namespace NOf1Lab.Application.Services;
 
 public sealed class TemplateService(IAppDbContext db)
 {
+    private static readonly string[] FeaturedKeys =
+    [
+        "earlier-bedtime",
+        "morning-light",
+        "training-load",
+        "caffeine-cutoff",
+        "no-delivery-dinners"
+    ];
+
     public async Task<Result<IReadOnlyList<TemplateDto>>> ListAsync(CancellationToken ct = default)
     {
-        var templates = await db.Templates.AsNoTracking()
-            .OrderBy(t => t.Title)
-            .ToListAsync(ct);
+        var templates = await db.Templates.AsNoTracking().ToListAsync(ct);
+        var featuredRank = FeaturedKeys
+            .Select((key, index) => (key, index))
+            .ToDictionary(x => x.key, x => x.index);
 
-        return Result<IReadOnlyList<TemplateDto>>.Ok(templates.Select(ToDto).ToList());
+        var ordered = templates
+            .OrderBy(t => featuredRank.TryGetValue(t.Key, out var rank) ? rank : int.MaxValue)
+            .ThenBy(t => t.Title)
+            .Select(ToDto)
+            .ToList();
+
+        return Result<IReadOnlyList<TemplateDto>>.Ok(ordered);
     }
 
     public async Task<Result<TemplateDto>> GetAsync(string key, CancellationToken ct = default)

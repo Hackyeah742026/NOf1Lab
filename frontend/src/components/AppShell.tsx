@@ -4,7 +4,7 @@ import { Button } from './Button'
 
 function navLinkClass(isActive: boolean) {
   return [
-    'rounded-full px-3.5 py-1.5 text-sm font-semibold transition',
+    'rounded-full px-3.5 py-1.5 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]',
     isActive
       ? 'bg-white text-[var(--color-accent)] shadow-sm ring-1 ring-emerald-900/10'
       : 'text-[var(--color-muted)] hover:text-[var(--color-ink)]',

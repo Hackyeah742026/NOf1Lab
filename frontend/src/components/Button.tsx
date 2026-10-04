@@ -7,9 +7,9 @@ const base =
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    'bg-[var(--color-accent)] px-5 py-2.5 text-white shadow-sm hover:bg-[#185c40] active:translate-y-px',
+    'bg-[var(--color-accent)] px-5 py-2.5 text-white shadow-sm hover:bg-[var(--color-accent-hover)] active:translate-y-px',
   secondary:
-    'bg-[var(--color-accent-soft)] px-5 py-2.5 text-[var(--color-ink)] ring-1 ring-inset ring-emerald-900/10 hover:bg-[#c6e3d4] active:translate-y-px',
+    'bg-[var(--color-accent-soft)] px-5 py-2.5 text-[var(--color-ink)] ring-1 ring-inset ring-emerald-900/10 hover:bg-[var(--color-accent-soft-hover)] active:translate-y-px',
   ghost:
     'px-3 py-2 text-[var(--color-muted)] hover:bg-emerald-900/5 hover:text-[var(--color-ink)]',
 }

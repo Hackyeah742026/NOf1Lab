@@ -97,9 +97,16 @@ public sealed class ExplainService(IAppDbContext db, IAiExplainer aiExplainer)
     private static string SuggestNext(string currentKey) => currentKey switch
     {
         "earlier-bedtime" => "caffeine-cutoff",
-        "caffeine-cutoff" => "morning-light",
-        "morning-light" => "training-load",
-        "training-load" => "no-delivery-dinners",
+        "caffeine-cutoff" => "evening-walk",
+        "evening-walk" => "morning-light",
+        "morning-light" => "phone-free-first-hour",
+        "phone-free-first-hour" => "protein-breakfast",
+        "protein-breakfast" => "hydration-2l",
+        "hydration-2l" => "midday-stretch",
+        "midday-stretch" => "training-load",
+        "training-load" => "strength-2x",
+        "strength-2x" => "no-delivery-dinners",
+        "no-delivery-dinners" => "earlier-bedtime",
         _ => "earlier-bedtime"
     };
 }

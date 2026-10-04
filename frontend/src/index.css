@@ -5,7 +5,9 @@
   --color-ink: #13281f;
   --color-muted: #4a6658;
   --color-accent: #1c6b4a;
+  --color-accent-hover: color-mix(in srgb, var(--color-accent) 88%, #000);
   --color-accent-soft: #d5ebe0;
+  --color-accent-soft-hover: color-mix(in srgb, var(--color-accent-soft) 88%, #000);
   --color-panel: rgba(255, 255, 255, 0.78);
   --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", serif;
   --font-body: "Source Sans 3", "Segoe UI", sans-serif;
