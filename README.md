@@ -54,3 +54,10 @@ Phase 0 skeleton:
 - Domain `Result` / `Error` + HTTP mapping
 - Minimal API endpoint groups (stubs) + `/health`
 - React app with Router, TanStack Query, Tailwind, API health check
+
+## Demo login
+
+- Email: `demo@nof1lab.local`
+- Password: `Demo123!`
+
+Seeded data includes 5 templates and one completed earlier-bedtime experiment with a computed verdict.
